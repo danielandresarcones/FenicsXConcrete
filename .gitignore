@@ -125,5 +125,10 @@ dmypy.json
 # ignore mesh files
 **/mesh/*
 
+.idea
+
 # sphinx website build
 .build
+
+*.h5
+*.xdmf
