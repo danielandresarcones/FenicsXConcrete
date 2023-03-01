@@ -1,0 +1,10 @@
+name: fenicsxconcrete
+channels:
+  - conda-forge
+dependencies:
+  - fenics-dolfinx
+  - pint
+  - pytest
+  - python-gmsh
+  - meshio
+  - pip
