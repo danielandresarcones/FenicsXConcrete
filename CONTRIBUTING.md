@@ -1,5 +1,11 @@
 # Contributing
 
+## Code coverage
+
+When contributing new code, please make sure your code is covered by respective tests.
+
+The coverage is automatically evaluated and the tests will fail if you try to introduce changes which will reduce the coverage, compared to the main branch.
+
 ## Coding conventions
 
 These are the conventions that you should follow when contributing to the repository. Some of them will be checked automatically during a pull request. Following these conventions will make code reviews much easier.
