@@ -2,18 +2,18 @@ import os
 from pathlib import Path
 
 import numpy as np
-import pint
 import pytest
 
 from fenicsxconcrete.experimental_setup.uniaxial_cube import UniaxialCubeExperiment
 from fenicsxconcrete.finite_element_problem.linear_elasticity import LinearElasticity
+from fenicsxconcrete.sensor_definition.displacement_sensor import DisplacementSensor
 from fenicsxconcrete.sensor_definition.strain_sensor import StrainSensor
 from fenicsxconcrete.sensor_definition.stress_sensor import StressSensor
 from fenicsxconcrete.unit_registry import ureg
 
 
 @pytest.mark.parametrize("dim", [2, 3])
-def test_disp(dim: int):
+def test_disp(dim: int) -> None:
     """uniaxial tension test for different dimensions (dim)"""
 
     # setup paths and directories
@@ -41,6 +41,7 @@ def test_disp(dim: int):
     parameters["rho"] = 7750 * ureg("kg/m^3")
     parameters["E"] = 210e9 * ureg("N/m^2")
     parameters["nu"] = 0.28 * ureg("")
+    parameters["strain_state"] = "uniaxial" * ureg("")
 
     if dim == 2:
         # change default stress_state
@@ -50,13 +51,14 @@ def test_disp(dim: int):
     experiment = UniaxialCubeExperiment(parameters)
     problem = LinearElasticity(experiment, parameters, pv_name=file_name, pv_path=data_path)
 
-    # add sensors
     if dim == 2:
-        problem.add_sensor(StressSensor([[0.5, 0.5, 0.0]]))
-        problem.add_sensor(StrainSensor([[0.5, 0.5, 0.0]]))
+        sensor_location = [0.5, 0.5, 0.0]
     elif dim == 3:
-        problem.add_sensor(StressSensor([[0.5, 0.5, 0.5]]))
-        problem.add_sensor(StrainSensor([[0.5, 0.5, 0.5]]))
+        sensor_location = [0.5, 0.5, 0.5]
+
+    # add sensors
+    problem.add_sensor(StressSensor(sensor_location))
+    problem.add_sensor(StrainSensor(sensor_location))
 
     # apply displacement load and solve
     problem.experiment.apply_displ_load(displacement)
@@ -64,40 +66,76 @@ def test_disp(dim: int):
     problem.pv_plot()
 
     # checks
-    analytic_eps = displacement.to_base_units() / (1.0 * ureg("m"))
+    analytic_eps = (displacement.to_base_units() / (1.0 * ureg("m"))).magnitude
+
+    strain_result = problem.sensors["StrainSensor"].get_last_entry().magnitude
+    stress_result = problem.sensors["StressSensor"].get_last_entry().magnitude
     if dim == 2:
         # strain in yy direction
-        assert problem.sensors["StrainSensor"].data[-1][-1] == pytest.approx(analytic_eps)
+        assert strain_result[-1] == pytest.approx(analytic_eps)
         # strain in xx direction
-        assert problem.sensors["StrainSensor"].data[-1][0] == pytest.approx(-problem.parameters["nu"] * analytic_eps)
+        assert strain_result[0] == pytest.approx(-problem.parameters["nu"].magnitude * analytic_eps)
         # strain in xy and yx direction
-        assert problem.sensors["StrainSensor"].data[-1][1] == pytest.approx(
-            problem.sensors["StrainSensor"].data[-1][2]
-        )
-        assert problem.sensors["StrainSensor"].data[-1][1] == pytest.approx(0.0)
+        assert strain_result[1] == pytest.approx(strain_result[2])
+        assert strain_result[1] == pytest.approx(0.0)
         # stress in yy direction
-        assert problem.sensors["StressSensor"].data[-1][-1].magnitude == pytest.approx(
-            (analytic_eps * problem.parameters["E"]).magnitude
-        )
+        assert stress_result[-1] == pytest.approx((analytic_eps * problem.parameters["E"]).magnitude)
+
     elif dim == 3:
         # strain in zz direction
-        assert problem.sensors["StrainSensor"].data[-1][-1] == pytest.approx(analytic_eps)
+        assert strain_result[-1] == pytest.approx(analytic_eps)
         # strain in yy direction
-        assert problem.sensors["StrainSensor"].data[-1][4] == pytest.approx(-problem.parameters["nu"] * analytic_eps)
+        assert strain_result[4] == pytest.approx(-problem.parameters["nu"].magnitude * analytic_eps)
         # strain in xx direction
-        assert problem.sensors["StrainSensor"].data[-1][0] == pytest.approx(-problem.parameters["nu"] * analytic_eps)
+        assert strain_result[0] == pytest.approx(-problem.parameters["nu"].magnitude * analytic_eps)
         # shear strains
         sum_mixed_strains = (
-            problem.sensors["StrainSensor"].data[-1][1].magnitude  # xy
-            - problem.sensors["StrainSensor"].data[-1][3].magnitude  # yx
-            - problem.sensors["StrainSensor"].data[-1][2].magnitude  # xz
-            - problem.sensors["StrainSensor"].data[-1][6].magnitude  # zx
-            - problem.sensors["StrainSensor"].data[-1][5].magnitude  # yz
-            - problem.sensors["StrainSensor"].data[-1][7].magnitude  # zy
+            strain_result[1]  # xy
+            - strain_result[3]  # yx
+            - strain_result[2]  # xz
+            - strain_result[6]  # zx
+            - strain_result[5]  # yz
+            - strain_result[7]  # zy
         )
         assert sum_mixed_strains == pytest.approx(0.0)
 
         # stress in zz direction
-        assert problem.sensors["StressSensor"].data[-1][-1].magnitude == pytest.approx(
-            (analytic_eps * problem.parameters["E"]).magnitude
-        )
+        assert stress_result[-1] == pytest.approx((analytic_eps * problem.parameters["E"].magnitude))
+
+
+@pytest.mark.parametrize("dim", [2, 3])
+def test_strain_state_error(dim: int) -> None:
+    setup_parameters = UniaxialCubeExperiment.default_parameters()
+    setup_parameters["dim"] = dim * ureg("")
+    setup_parameters["strain_state"] = "wrong" * ureg("")
+    setup = UniaxialCubeExperiment(setup_parameters)
+    default_setup, fem_parameters = LinearElasticity.default_parameters()
+    with pytest.raises(ValueError):
+        fem_problem = LinearElasticity(setup, fem_parameters)
+
+
+@pytest.mark.parametrize("dim", [2, 3])
+def test_multiaxial_strain(dim: int) -> None:
+    setup_parameters = UniaxialCubeExperiment.default_parameters()
+    setup_parameters["dim"] = dim * ureg("")
+    setup_parameters["strain_state"] = "multiaxial" * ureg("")
+    setup = UniaxialCubeExperiment(setup_parameters)
+    default_setup, fem_parameters = LinearElasticity.default_parameters()
+    fem_problem = LinearElasticity(setup, fem_parameters)
+
+    displ = -0.01
+    fem_problem.experiment.apply_displ_load(displ * ureg("m"))
+
+    if dim == 2:
+        target = np.array([displ, displ])
+        sensor_location = [fem_problem.p["length"], fem_problem.p["height"], 0.0]
+    elif dim == 3:
+        target = np.array([displ, displ, displ])
+        sensor_location = [fem_problem.p["length"], fem_problem.p["width"], fem_problem.p["height"]]
+
+    sensor = DisplacementSensor(sensor_location)
+
+    fem_problem.add_sensor(sensor)
+    fem_problem.solve()
+    result = fem_problem.sensors.DisplacementSensor.get_last_entry().magnitude
+    assert result == pytest.approx(target)

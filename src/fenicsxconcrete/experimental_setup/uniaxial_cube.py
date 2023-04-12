@@ -6,7 +6,6 @@ import pint
 from mpi4py import MPI
 
 from fenicsxconcrete.boundary_conditions.bcs import BoundaryConditions
-from fenicsxconcrete.boundary_conditions.boundary import plane_at
 from fenicsxconcrete.experimental_setup.base_experiment import Experiment
 from fenicsxconcrete.helper import Parameters
 from fenicsxconcrete.unit_registry import ureg
@@ -35,6 +34,9 @@ class UniaxialCubeExperiment(Experiment):
 
         # initialize a set of default parameters
         default_p = Parameters()
+        default_p["height"] = 1 * ureg("m")
+        default_p["width"] = 1 * ureg("m")
+        default_p["length"] = 1 * ureg("m")
 
         default_p.update(parameters)
 
@@ -55,6 +57,8 @@ class UniaxialCubeExperiment(Experiment):
         setup_parameters["num_elements_length"] = 2 * ureg("")
         setup_parameters["num_elements_width"] = 2 * ureg("")
         setup_parameters["num_elements_height"] = 2 * ureg("")
+        setup_parameters["strain_state"] = "uniaxial" * ureg("")
+        setup_parameters["strain_state"] = "uniaxial" * ureg("")
 
         return setup_parameters
 
@@ -69,7 +73,7 @@ class UniaxialCubeExperiment(Experiment):
                 MPI.COMM_WORLD,
                 [
                     [0.0, 0.0],
-                    [1.0, 1.0],
+                    [self.p["length"], self.p["height"]],
                 ],
                 [self.p["num_elements_length"], self.p["num_elements_height"]],
                 cell_type=df.mesh.CellType.quadrilateral,
@@ -79,7 +83,7 @@ class UniaxialCubeExperiment(Experiment):
                 MPI.COMM_WORLD,
                 [
                     [0.0, 0.0, 0.0],
-                    [1.0, 1.0, 1.0],
+                    [self.p["length"], self.p["width"], self.p["height"]],
                 ],
                 [self.p["num_elements_length"], self.p["num_elements_width"], self.p["num_elements_height"]],
                 cell_type=df.mesh.CellType.hexahedron,
@@ -113,10 +117,21 @@ class UniaxialCubeExperiment(Experiment):
                 np.float64(0.0), boundary=self.boundary_left(), sub=0, method="geometrical", entity_dim=0
             )
 
-            # displacement controlled
-            bc_generator.add_dirichlet_bc(
-                self.top_displacement, boundary=self.boundary_top(), sub=1, method="geometrical", entity_dim=1
-            )
+            if self.p["strain_state"] == "uniaxial":
+                # displacement controlled
+                bc_generator.add_dirichlet_bc(
+                    self.top_displacement, boundary=self.boundary_top(), sub=1, method="geometrical", entity_dim=1
+                )
+            elif self.p["strain_state"] == "multiaxial":
+                # displacement controlled
+                bc_generator.add_dirichlet_bc(
+                    self.top_displacement, boundary=self.boundary_top(), sub=1, method="geometrical", entity_dim=1
+                )
+                bc_generator.add_dirichlet_bc(
+                    self.top_displacement, boundary=self.boundary_right(), sub=0, method="geometrical", entity_dim=0
+                )
+            else:
+                raise ValueError(f'Strain_state value: {self.p["strain_state"]} is not implemented in 2D.')
 
         elif self.p["dim"] == 3:
             # uniaxial bcs
@@ -131,9 +146,22 @@ class UniaxialCubeExperiment(Experiment):
             )
 
             # displacement controlled
-            bc_generator.add_dirichlet_bc(
-                self.top_displacement, boundary=self.boundary_top(), sub=2, method="geometrical", entity_dim=2
-            )
+            if self.p["strain_state"] == "uniaxial":
+                bc_generator.add_dirichlet_bc(
+                    self.top_displacement, boundary=self.boundary_top(), sub=2, method="geometrical", entity_dim=2
+                )
+            elif self.p["strain_state"] == "multiaxial":
+                bc_generator.add_dirichlet_bc(
+                    self.top_displacement, boundary=self.boundary_top(), sub=2, method="geometrical", entity_dim=2
+                )
+                bc_generator.add_dirichlet_bc(
+                    self.top_displacement, boundary=self.boundary_right(), sub=0, method="geometrical", entity_dim=0
+                )
+                bc_generator.add_dirichlet_bc(
+                    self.top_displacement, boundary=self.boundary_back(), sub=1, method="geometrical", entity_dim=1
+                )
+            else:
+                raise ValueError(f'Strain_state value: {self.p["strain_state"]} is not implemented in 3D.')
 
         return bc_generator.bcs
 
@@ -146,55 +174,3 @@ class UniaxialCubeExperiment(Experiment):
         """
 
         self.top_displacement.value = top_displacement.magnitude
-
-    def boundary_bottom(self) -> Callable:
-        """specify boundary: plane at bottom
-
-        Returns:
-            fct defining if dof is at boundary
-
-        """
-
-        if self.p["dim"] == 2:
-            return plane_at(0.0, "y")
-        elif self.p["dim"] == 3:
-            return plane_at(0.0, "z")
-
-    def boundary_left(self) -> Callable:
-        """specify boundary: plane at left side
-
-        Returns:
-            fct defining if dof is at boundary
-
-        """
-
-        if self.p["dim"] == 2:
-            return plane_at(0.0, "x")
-        elif self.p["dim"] == 3:
-            return plane_at(0.0, "x")
-
-    def boundary_top(self) -> Callable:
-        """specify boundary: plane at top
-
-        Returns:
-            fct defining if dof is at boundary
-
-        """
-
-        if self.p["dim"] == 2:
-            return plane_at(1.0, "y")
-        elif self.p["dim"] == 3:
-            return plane_at(1.0, "z")
-
-    def boundary_front(self) -> Callable:
-        """specify boundary: plane at front
-
-        only for 3D case front plane
-
-        Returns:
-            fct defining if dof is at boundary
-
-        """
-
-        if self.p["dim"] == 3:
-            return plane_at(0.0, "y")
