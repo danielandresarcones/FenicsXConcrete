@@ -24,6 +24,10 @@ class Experiment(ABC, LogMixin):
 
         This is needs to be called by children
         Constant parameters are defined here
+
+        Args:
+            parameters: parameter dictionary with units
+
         """
 
         # initialize parameter attributes
@@ -47,26 +51,58 @@ class Experiment(ABC, LogMixin):
     @staticmethod
     @abstractmethod
     def default_parameters() -> dict[str, pint.Quantity]:
-        """returns a dictionary with required parameters and a set of working values as example"""
+        """sets up a working set of parameter values as example
+
+        must be defined in each child
+
+        Returns:
+            a dictionary with required parameters and a set of working values as example
+
+        """
 
     @abstractmethod
     def create_displacement_boundary(self, V: df.fem.FunctionSpace) -> list[df.fem.bcs.DirichletBCMetaClass] | None:
-        """returns a list with displacement boundary conditions
+        """defines empty displacement boundary conditions (to be done in child)
 
         this function is abstract until there is a need for a material that does not need a displacement boundary
         once that is required, just make this a normal function that returns an empty list
+
+        Args:
+            V: function space
+
+        Returns:
+            if defined a list with displacement boundary conditions otherwise None
+
         """
 
     def create_force_boundary(self, v: ufl.argument.Argument | None = None) -> ufl.form.Form | None:
-        # define empty force boundary
+        """defines empty force boundary (to be done in child)
+
+        Args:
+            v: test function
+
+        Returns:
+            if defined a form for the force otherwise None
+
+        """
+
         pass
 
     def create_body_force(self, v: ufl.argument.Argument | None = None) -> ufl.form.Form | None:
-        # define empty body force function
+        """defines empty body force function
+
+        Args:
+            v: test function
+
+        Returns:
+            if defined a form for the body force otherwise None
+
+        """
+
         pass
 
     def boundary_top(self) -> Callable:
-        """specify boundary: plane at top
+        """specifies boundary: plane at top
 
         Returns:
             fct defining if dof is at boundary
@@ -78,7 +114,7 @@ class Experiment(ABC, LogMixin):
             return plane_at(self.p["height"], 2)
 
     def boundary_bottom(self) -> Callable:
-        """specify boundary: plane at bottom
+        """specifies boundary: plane at bottom
 
         Returns: fct defining if dof is at boundary
 
@@ -89,7 +125,7 @@ class Experiment(ABC, LogMixin):
             return plane_at(0.0, "z")
 
     def boundary_left(self) -> Callable:
-        """specify boundary: plane at left side
+        """specifies boundary: plane at left side
 
         Returns:
             fct defining if dof is at boundary
@@ -101,7 +137,7 @@ class Experiment(ABC, LogMixin):
             return plane_at(0.0, "x")
 
     def boundary_right(self) -> Callable:
-        """specify boundary: plane at left side
+        """specifies boundary: plane at left side
 
         Returns:
             fct defining if dof is at boundary
@@ -113,7 +149,7 @@ class Experiment(ABC, LogMixin):
             return plane_at(self.p["length"], "x")
 
     def boundary_front(self) -> Callable:
-        """specify boundary: plane at front
+        """specifies boundary: plane at front
 
         only for 3D case front plane
 
@@ -125,7 +161,7 @@ class Experiment(ABC, LogMixin):
             return plane_at(0.0, "y")
 
     def boundary_back(self) -> Callable:
-        """specify boundary: plane at front
+        """specifies boundary: plane at front
 
         only for 3D case front plane
 
