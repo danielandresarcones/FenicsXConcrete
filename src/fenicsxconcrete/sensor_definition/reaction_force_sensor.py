@@ -88,6 +88,12 @@ class ReactionForceSensor(BaseSensor):
         self.data.append(reaction_force_vector)
         self.time.append(t)
 
+    def report_metadata(self) -> dict:
+        """Generates dictionary with the metadata of this sensor"""
+        metadata = super().report_metadata()
+        metadata["surface"]  = self.surface
+        return metadata
+    
     @staticmethod
     def base_unit() -> ureg:
         """Defines the base unit of this sensor

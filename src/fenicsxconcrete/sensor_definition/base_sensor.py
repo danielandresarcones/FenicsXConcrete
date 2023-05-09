@@ -45,6 +45,15 @@ class BaseSensor(ABC, LogMixin):
     def base_unit():
         """Defines the base unit of this sensor"""
 
+    def report_metadata(self) -> dict:
+        """Generates dictionary with the metadata of this sensor"""
+        metadata = {}
+        metadata["name"] = self.name
+        metadata["type"] = self.__class__.__name__
+        metadata["units"] = self.units.units
+        metadata["magnitud"] = self.units.units.magnitude_name
+        return metadata
+
     def get_data_list(self) -> pint.Quantity[list]:
         """Returns the measured data with respective unit
 
@@ -142,3 +151,9 @@ class PointSensor(BaseSensor):
     @abstractmethod
     def base_unit():
         """Defines the base unit of this sensor, must be specified by child"""
+
+    def report_metadata(self) -> dict:
+        """Generates dictionary with the metadata of this sensor"""
+        metadata = super().report_metadata()
+        metadata["where"]  = self.where
+        return metadata
