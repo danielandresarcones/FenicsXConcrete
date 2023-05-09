@@ -50,7 +50,7 @@ class BaseSensor(ABC, LogMixin):
         metadata = {}
         metadata["name"] = self.name
         metadata["type"] = self.__class__.__name__
-        metadata["units"] = f"{self.units.units}"
+        metadata["units"] = f"{self.units._units}"
         metadata["dimensionality"] = f"{self.units.dimensionality}"
         return metadata
 
