@@ -47,7 +47,7 @@ def test_base_sensor() -> None:
         "name": "DisplacementSensor",
         "type": "DisplacementSensor",
         "units": "millimeter",
-        "dimensionality": "[length]"
+        "dimensionality": "[length]",
     }
     for key in true_metadata:
         assert key in metadata and true_metadata[key] == metadata[key]

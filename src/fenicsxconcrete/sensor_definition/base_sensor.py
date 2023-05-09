@@ -50,7 +50,7 @@ class BaseSensor(ABC, LogMixin):
         metadata = {}
         metadata["name"] = self.name
         metadata["type"] = self.__class__.__name__
-        metadata["units"] = f"{self.units.u}"
+        metadata["units"] = f"{self.units.units}"
         metadata["dimensionality"] = f"{self.units.dimensionality}"
         return metadata
 
@@ -155,5 +155,5 @@ class PointSensor(BaseSensor):
     def report_metadata(self) -> dict:
         """Generates dictionary with the metadata of this sensor"""
         metadata = super().report_metadata()
-        metadata["where"]  = self.where
+        metadata["where"] = self.where
         return metadata
