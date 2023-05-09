@@ -91,7 +91,7 @@ class ReactionForceSensor(BaseSensor):
     def report_metadata(self) -> dict:
         """Generates dictionary with the metadata of this sensor"""
         metadata = super().report_metadata()
-        metadata["surface"]  = self.surface
+        metadata["surface"]  = self.surface.__name__
         return metadata
     
     @staticmethod

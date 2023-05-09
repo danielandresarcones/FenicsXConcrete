@@ -77,6 +77,12 @@ def test_full_boundary_reaction(dim: int, degree: int) -> None:
     assert force_top == pytest.approx(-1 * force_bottom)
     # checking equal forces on sides
     assert force_left == pytest.approx(force_bottom)
+    # checking report metadata
+    # TODO Figure out how to identify which boundary is applied
+    assert fem_problem.sensors.ReactionForceSensor.report_metadata()["surface"] == "boundary"
+    assert fem_problem.sensors.ReactionForceSensor2.report_metadata()["surface"] == "boundary"
+    assert fem_problem.sensors.ReactionForceSensor3.report_metadata()["surface"] == "boundary"
+    assert fem_problem.sensors.ReactionForceSensor4.report_metadata()["surface"] == "boundary"
 
     if dim == 3:
         force_front = fem_problem.sensors.ReactionForceSensor5.get_last_entry().magnitude[1]
@@ -86,6 +92,9 @@ def test_full_boundary_reaction(dim: int, degree: int) -> None:
         assert force_front == pytest.approx(-1 * force_back)
         # checking equal forces left-front
         assert force_left == pytest.approx(force_front)
+        # checking report metadata
+        assert fem_problem.sensors.ReactionForceSensor5.report_metadata()["surface"] == "boundary"
+        assert fem_problem.sensors.ReactionForceSensor6.report_metadata()["surface"] == "boundary"
 
 
 @pytest.mark.parametrize("dim", [2, 3])

@@ -50,8 +50,8 @@ class BaseSensor(ABC, LogMixin):
         metadata = {}
         metadata["name"] = self.name
         metadata["type"] = self.__class__.__name__
-        metadata["units"] = self.units.units
-        metadata["magnitud"] = self.units.units.magnitude_name
+        metadata["units"] = f"{self.units.u}"
+        metadata["dimensionality"] = f"{self.units.dimensionality}"
         return metadata
 
     def get_data_list(self) -> pint.Quantity[list]:
