@@ -1,3 +1,7 @@
+import json
+import os
+from pathlib import Path
+
 import pytest
 
 from fenicsxconcrete.experimental_setup.cantilever_beam import CantileverBeam
@@ -64,6 +68,22 @@ def test_sensor_options() -> None:
 
     # check that some data is in sensor
     assert problem.sensors[sensor.name].data != []
+
+    # check export sensor data
+    problem.export_sensor_metadata(Path("sensor_metadata.json"))
+    expected_metadata = {
+        "DisplacementSensor": {
+            "name": "DisplacementSensor",
+            "type": "DisplacementSensor",
+            "units": "meter",
+            "dimensionality": "[length]",
+            "where": [1, 0.0, 0.0],
+        }
+    }
+    with open("sensor_metadata.json", "r") as f:
+        sensor_metadata = json.load(f)
+    assert sensor_metadata == expected_metadata
+    os.remove("sensor_metadata.json")
 
     # check cleaning of sensor data
     problem.clean_sensor_data()

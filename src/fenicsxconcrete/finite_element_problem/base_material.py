@@ -1,3 +1,4 @@
+import json
 from abc import ABC, abstractmethod
 from pathlib import Path, PosixPath
 
@@ -98,6 +99,24 @@ class MaterialProblem(ABC, LogMixin):
     def delete_sensor(self) -> None:
         del self.sensors
         self.sensors = self.SensorDict()
+
+    def export_sensor_metadata(self, path: Path) -> None:
+        """Exports sensor metadata to JSON file according to the appropriate schema.
+
+        Args:
+            path : Path
+                Path where the metadata should be stored
+
+        """
+
+        sensors_metadata_dict = {}
+
+        for key, value in self.sensors.items():
+            sensors_metadata_dict[key] = value.report_metadata()
+            sensors_metadata_dict[key]["name"] = key
+
+        with open(path, "w") as f:
+            json.dump(sensors_metadata_dict, f)
 
     class SensorDict(dict):
         """
