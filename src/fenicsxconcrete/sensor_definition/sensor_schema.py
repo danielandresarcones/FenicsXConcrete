@@ -35,6 +35,10 @@ def generate_sensor_schema() -> dict:
                         "type": "string",
                         "description": "The dimensionality of measurement for the sensor between brackets []",
                     },
+                    "sensor_file": {
+                        "type": "string",
+                        "description": "Python file where the sensor is defined whithout extension",
+                    },
                 },
                 "required": ["id", "type", "units", "dimensionality"],
             },

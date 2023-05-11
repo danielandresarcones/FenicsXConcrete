@@ -67,7 +67,8 @@ def test_sensor_options() -> None:
     problem.solve()
 
     # check that some data is in sensor
-    assert problem.sensors[sensor.name].data != []
+    measure = problem.sensors[sensor.name].data
+    assert measure != []
 
     # check export sensor data
     problem.export_sensors_metadata(Path("sensors_metadata.json"))
@@ -76,6 +77,7 @@ def test_sensor_options() -> None:
             {
                 "id": "DisplacementSensor",
                 "type": "DisplacementSensor",
+                "sensor_file": "displacement_sensor",
                 "units": "meter",
                 "dimensionality": "[length]",
                 "where": [1, 0.0, 0.0],
@@ -98,3 +100,9 @@ def test_sensor_options() -> None:
     problem.import_sensors_from_metadata(Path("sensors_metadata.json"))
 
     os.remove("sensors_metadata.json")
+
+    # repeat solving and plotting
+    problem.solve()
+
+    # repeat check that some data is in imported sensor
+    assert problem.sensors[sensor.name].data == pytest.approx(measure)

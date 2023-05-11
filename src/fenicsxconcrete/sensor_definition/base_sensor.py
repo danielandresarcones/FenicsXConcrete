@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from abc import ABC, abstractmethod
 
 import pint
@@ -50,6 +51,7 @@ class BaseSensor(ABC, LogMixin):
         metadata = {}
         metadata["id"] = self.name
         metadata["type"] = self.__class__.__name__
+        metadata["sensor_file"] = os.path.splitext(os.path.basename(__file__))[0]
         metadata["units"] = f"{self.units._units}"
         metadata["dimensionality"] = f"{self.units.dimensionality}"
         return metadata
@@ -155,5 +157,6 @@ class PointSensor(BaseSensor):
     def report_metadata(self) -> dict:
         """Generates dictionary with the metadata of this sensor"""
         metadata = super().report_metadata()
+        metadata["sensor_file"] = os.path.splitext(os.path.basename(__file__))[0]
         metadata["where"] = self.where
         return metadata

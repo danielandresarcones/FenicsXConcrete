@@ -1,3 +1,5 @@
+import os
+
 import dolfinx as df
 import ufl
 
@@ -57,6 +59,12 @@ class StressSensor(PointSensor):
 
         self.data.append(stress_data)
         self.time.append(t)
+
+    def report_metadata(self) -> dict:
+        """Generates dictionary with the metadata of this sensor"""
+        metadata = super().report_metadata()
+        metadata["sensor_file"] = os.path.splitext(os.path.basename(__file__))[0]
+        return metadata
 
     @staticmethod
     def base_unit() -> ureg:

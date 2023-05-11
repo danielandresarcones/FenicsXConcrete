@@ -1,3 +1,4 @@
+import os
 from collections.abc import Callable
 
 import dolfinx as df
@@ -92,6 +93,7 @@ class ReactionForceSensor(BaseSensor):
         """Generates dictionary with the metadata of this sensor"""
         metadata = super().report_metadata()
         metadata["surface"] = self.surface.__name__
+        metadata["sensor_file"] = os.path.splitext(os.path.basename(__file__))[0]
         return metadata
 
     @staticmethod

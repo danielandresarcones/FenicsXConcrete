@@ -1,3 +1,4 @@
+import importlib
 import json
 from abc import ABC, abstractmethod
 from pathlib import Path, PosixPath
@@ -129,11 +130,33 @@ class MaterialProblem(ABC, LogMixin):
 
         """
 
+        # Load and validate
         sensors_metadata_dict = {}
         with open(path, "r") as f:
             sensors_metadata_dict = json.load(f)
         schema = generate_sensor_schema()
         jsonschema.validate(instance=sensors_metadata_dict, schema=schema)
+
+        for sensor in sensors_metadata_dict["sensors"]:
+            # Dynamically import the module containing the class
+            module_name = "fenicsxconcrete.sensor_definition." + sensor["sensor_file"].lower()
+            module = importlib.import_module(module_name)
+
+            # Create a dictionary of keyword arguments from the remaining properties in the dictionary
+            kwargs = {
+                k: v for k, v in sensor.items() if k not in ["id", "type", "sensor_file", "units", "dimensionality"]
+            }
+
+            # Dynamically retrieve the class by its name
+            class_name = sensor["type"]
+            MySensorClass = getattr(module, class_name)
+
+            # Instantiate an object of the class with the given properties
+            sensor_i = MySensorClass(**kwargs)
+
+            # TODO Rebuild units and dimensionality from metadata
+
+            self.add_sensor(sensor_i)
 
     class SensorDict(dict):
         """
