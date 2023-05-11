@@ -2,11 +2,13 @@ import json
 from abc import ABC, abstractmethod
 from pathlib import Path, PosixPath
 
+import jsonschema
 import pint
 
 from fenicsxconcrete.experimental_setup.base_experiment import Experiment
 from fenicsxconcrete.helper import LogMixin, Parameters
 from fenicsxconcrete.sensor_definition.base_sensor import BaseSensor
+from fenicsxconcrete.sensor_definition.sensor_schema import generate_sensor_schema
 from fenicsxconcrete.unit_registry import ureg
 
 
@@ -100,7 +102,7 @@ class MaterialProblem(ABC, LogMixin):
         del self.sensors
         self.sensors = self.SensorDict()
 
-    def export_sensor_metadata(self, path: Path) -> None:
+    def export_sensors_metadata(self, path: Path) -> None:
         """Exports sensor metadata to JSON file according to the appropriate schema.
 
         Args:
@@ -109,14 +111,33 @@ class MaterialProblem(ABC, LogMixin):
 
         """
 
-        sensors_metadata_dict = {}
+        sensors_metadata_dict = {"sensors": []}
 
         for key, value in self.sensors.items():
-            sensors_metadata_dict[key] = value.report_metadata()
-            sensors_metadata_dict[key]["name"] = key
+            sensors_metadata_dict["sensors"].append(value.report_metadata())
+            # sensors_metadata_dict[key]["name"] = key
 
         with open(path, "w") as f:
             json.dump(sensors_metadata_dict, f)
+
+    def import_sensors_from_metadata(self, path: Path) -> None:
+        """Import sensor metadata to JSON file and validate with the appropriate schema.
+
+        Args:
+            path : Path
+                Path where the metadata file is
+
+        """
+
+        sensors_metadata_dict = {}
+        with open(path, "r") as f:
+            sensors_metadata_dict = json.load(f)
+        schema = generate_sensor_schema()
+        jsonschema.validate(instance=sensors_metadata_dict, schema=schema)
+        sensors_metadata_dict["DisplacementSensor2"] = {"name": "Dummy", "type": "Fail"}
+        jsonschema.validate(instance=sensors_metadata_dict, schema=schema)
+
+        print("all ok")
 
     class SensorDict(dict):
         """

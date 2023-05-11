@@ -48,7 +48,7 @@ class BaseSensor(ABC, LogMixin):
     def report_metadata(self) -> dict:
         """Generates dictionary with the metadata of this sensor"""
         metadata = {}
-        metadata["name"] = self.name
+        metadata["id"] = self.name
         metadata["type"] = self.__class__.__name__
         metadata["units"] = f"{self.units._units}"
         metadata["dimensionality"] = f"{self.units.dimensionality}"

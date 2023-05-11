@@ -6,7 +6,7 @@ def generate_sensor_schema() -> dict:
     """
 
     schema = {
-        "$schema": "http://json-schema.org/draft-07/schema#",
+        "$schema": "http://json-schema.org/2020-12/schema#",
         "title": "SensorsList",
         "type": "object",
         "properties": {
@@ -30,13 +30,13 @@ def generate_sensor_schema() -> dict:
                 "properties": {
                     "id": {"type": "string", "description": "A unique identifier for the sensor"},
                     "type": {"type": "string", "description": "The python class for the sensor"},
-                    "unit": {"type": "string", "description": "The unit of measurement for the sensor"},
+                    "units": {"type": "string", "description": "The unit of measurement for the sensor"},
                     "dimensionality": {
                         "type": "string",
                         "description": "The dimensionality of measurement for the sensor between brackets []",
                     },
                 },
-                "required": ["id", "type", "unit", "dimensionality"],
+                "required": ["id", "type", "units", "dimensionality"],
             },
             "pointSensorProperties": {
                 "allOf": [

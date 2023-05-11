@@ -70,20 +70,21 @@ def test_sensor_options() -> None:
     assert problem.sensors[sensor.name].data != []
 
     # check export sensor data
-    problem.export_sensor_metadata(Path("sensor_metadata.json"))
+    problem.export_sensors_metadata(Path("sensors_metadata.json"))
     expected_metadata = {
-        "DisplacementSensor": {
-            "name": "DisplacementSensor",
-            "type": "DisplacementSensor",
-            "units": "meter",
-            "dimensionality": "[length]",
-            "where": [1, 0.0, 0.0],
-        }
+        "sensors": [
+            {
+                "id": "DisplacementSensor",
+                "type": "DisplacementSensor",
+                "units": "meter",
+                "dimensionality": "[length]",
+                "where": [1, 0.0, 0.0],
+            }
+        ]
     }
-    with open("sensor_metadata.json", "r") as f:
+    with open("sensors_metadata.json", "r") as f:
         sensor_metadata = json.load(f)
     assert sensor_metadata == expected_metadata
-    os.remove("sensor_metadata.json")
 
     # check cleaning of sensor data
     problem.clean_sensor_data()
@@ -92,3 +93,8 @@ def test_sensor_options() -> None:
     # delete sensor
     problem.delete_sensor()
     assert problem.sensors == {}
+
+    # check import sensor data
+    problem.import_sensors_from_metadata(Path("sensors_metadata.json"))
+
+    os.remove("sensors_metadata.json")
