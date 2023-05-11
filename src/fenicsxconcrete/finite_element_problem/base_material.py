@@ -134,10 +134,6 @@ class MaterialProblem(ABC, LogMixin):
             sensors_metadata_dict = json.load(f)
         schema = generate_sensor_schema()
         jsonschema.validate(instance=sensors_metadata_dict, schema=schema)
-        sensors_metadata_dict["DisplacementSensor2"] = {"name": "Dummy", "type": "Fail"}
-        jsonschema.validate(instance=sensors_metadata_dict, schema=schema)
-
-        print("all ok")
 
     class SensorDict(dict):
         """
