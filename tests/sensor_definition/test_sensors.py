@@ -44,7 +44,7 @@ def test_base_sensor() -> None:
     # testing metadata report
     metadata = u_sensor.report_metadata()
     true_metadata = {
-        "name": "DisplacementSensor",
+        "id": "DisplacementSensor",
         "type": "DisplacementSensor",
         "units": "millimeter",
         "dimensionality": "[length]",
