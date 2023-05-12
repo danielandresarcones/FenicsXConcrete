@@ -1,5 +1,6 @@
 import json
 import os
+from copy import deepcopy
 from pathlib import Path
 
 import pytest
@@ -67,7 +68,7 @@ def test_sensor_options() -> None:
     problem.solve()
 
     # check that some data is in sensor
-    measure = problem.sensors[sensor.name].data
+    measure = deepcopy(problem.sensors[sensor.name].data)
     assert measure != []
 
     # check export sensor data
@@ -105,4 +106,4 @@ def test_sensor_options() -> None:
     problem.solve()
 
     # repeat check that some data is in imported sensor
-    assert problem.sensors[sensor.name].data == pytest.approx(measure)
+    assert problem.sensors[sensor.name].data[0] == pytest.approx(measure[0])

@@ -152,7 +152,7 @@ class MaterialProblem(ABC, LogMixin):
             MySensorClass = getattr(module, class_name)
 
             # Instantiate an object of the class with the given properties
-            sensor_i = MySensorClass(**kwargs)
+            sensor_i = MySensorClass(name=sensor["id"], **kwargs)
 
             # TODO Rebuild units and dimensionality from metadata
 
