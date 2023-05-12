@@ -12,7 +12,7 @@ class Randomfield(object):
     ):
         """
         Class for random field
-        generates a random field using Karahune Loeve decomposition
+        generates a random field using Karhunen Loeve decomposition
         field of form: mean + sum_i sqr(lambda_i) EV_i xi_i
                 lambda_i, EV_i: eigenvalues and -vectors of covariance matrix C=c(r)
                 xi_i: new variables of random field (in general gaussian distributed N(0,1**2)
@@ -101,6 +101,7 @@ class Randomfield(object):
         Returns:
             The covarinace sig^2 exp(-r/rho)
         """
+        # TODO: This does not work if rho
         return self.sigma2 * np.exp(-1 / self.rho * r)
 
     def cov_squared_exp(self, r1, r2):
@@ -134,6 +135,7 @@ class Randomfield(object):
         L = coords.shape[0]
         c0 = np.repeat(coords, L, axis=0)
         c1 = np.tile(coords, [L, 1])
+        # TODO: This does not work if "x"
         if self._type == "x":
             r = np.absolute(c0[:, 0] - c1[:, 0])
         else:
