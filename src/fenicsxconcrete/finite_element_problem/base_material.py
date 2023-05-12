@@ -153,8 +153,7 @@ class MaterialProblem(ABC, LogMixin):
 
             # Instantiate an object of the class with the given properties
             sensor_i = MySensorClass(name=sensor["id"], **kwargs)
-
-            # TODO Rebuild units and dimensionality from metadata
+            sensor_i.set_units(units=sensor["units"])
 
             self.add_sensor(sensor_i)
 
