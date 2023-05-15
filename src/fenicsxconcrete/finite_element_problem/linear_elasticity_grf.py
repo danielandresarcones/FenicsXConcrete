@@ -23,8 +23,7 @@ class LinearElasticityGRF(LinearElasticity):
     ) -> None:
         super().__init__(experiment, parameters, pv_name, pv_path)
         # TODO There should be more elegant ways of doing this
-        self.pv_egrf_file = Path(pv_path) / (pv_name + "egrf.xdmf")
-        self.pv_nugrf_file = Path(pv_path) / (pv_name + "nugrf.xdmf")
+        self.pv_file = Path(pv_path) / (pv_name + ".xdmf")
 
     def setup(self) -> None:
         self.field_function_space = df.fem.FunctionSpace(self.experiment.mesh, ("CG", 1))
@@ -125,19 +124,23 @@ class LinearElasticityGRF(LinearElasticity):
         return lame1, lame2
 
     # TODO move this to sensor definition!?!?!
-    def pv_plot(self, t: int = 0) -> None:
-        # TODO add possibility for multiple time steps???
-        # Displacement Plot
+    def pv_plot(self, t: pint.Quantity | float = 1) -> None:
+        """creates paraview output at given time step
 
-        # "Displacement.xdmf"
-        # pv_output_file
-        # TODO Look into how to unify in one file
-        with df.io.XDMFFile(self.mesh.comm, self.pv_output_file, "w") as xdmf:
-            xdmf.write_mesh(self.mesh)
-            xdmf.write_function(self.displacement)
-        with df.io.XDMFFile(self.mesh.comm, self.pv_egrf_file, "w") as xdmf:
-            xdmf.write_mesh(self.mesh)
-            xdmf.write_function(self.E_randomfield.field)
-        with df.io.XDMFFile(self.mesh.comm, self.pv_nugrf_file, "w") as xdmf:
-            xdmf.write_mesh(self.mesh)
-            xdmf.write_function(self.nu_randomfield.field)
+        Args:
+            t: time point of output (default = 1)
+        """
+        print("create pv plot for t", t)
+        try:
+            _t = t.magnitude
+        except:
+            _t = t
+
+        self.displacement.name = "Displacement"
+        self.E_randomfield.field.name = "E_field"
+        self.nu_randomfield.field.name = "nu_field"
+
+        with df.io.XDMFFile(self.mesh.comm, self.pv_output_file, "a") as f:
+            f.write_function(self.displacement, _t)
+            f.write_function(self.E_randomfield.field, _t)
+            f.write_function(self.nu_randomfield.field, _t)

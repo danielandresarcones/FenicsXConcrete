@@ -3,6 +3,7 @@ import json
 from abc import ABC, abstractmethod
 from pathlib import Path, PosixPath
 
+import dolfinx as df
 import jsonschema
 import pint
 
@@ -64,6 +65,10 @@ class MaterialProblem(ABC, LogMixin):
         self.q_degree_of_hydration = None
 
         self.residual = None  # initialize residual
+
+        # set up xdmf file with mesh info
+        with df.io.XDMFFile(self.mesh.comm, self.pv_output_file, "w") as f:
+            f.write_mesh(self.mesh)
 
         # setup the material object to access the function
         self.setup()
