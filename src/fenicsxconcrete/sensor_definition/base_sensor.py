@@ -158,5 +158,8 @@ class PointSensor(BaseSensor):
         """Generates dictionary with the metadata of this sensor"""
         metadata = super().report_metadata()
         metadata["sensor_file"] = os.path.splitext(os.path.basename(__file__))[0]
-        metadata["where"] = self.where
+        if isinstance(self.where, list):
+            metadata["where"] = self.where
+        else:
+            metadata["where"] = list(self.where)
         return metadata
