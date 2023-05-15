@@ -104,16 +104,30 @@ class LinearElasticityGRF(LinearElasticity):
         self,
     ):
         # Random E and nu fields.
-        E_mean, E_variance = self.parameters_conversion(self.p["E"], 100e9)  # 3
-        Nu_mean, Nu_variance = self.parameters_conversion(self.p["nu"], 0.3)  # 0.03
+        E_mean, E_variance = self.parameters_conversion(self.p["E"], self.p["E_std"])  # 3
+        Nu_mean, Nu_variance = self.parameters_conversion(self.p["nu"], self.p["nu_std"])  # 0.03
 
         self.E_randomfield = self.random_field_generator(
-            self.field_function_space, "squared_exp", E_mean, 0.3, 0.05, E_variance, 3, 0.01
+            self.field_function_space,
+            "squared_exp",
+            E_mean,
+            self.p["correlation_length_1"],
+            self.p["correlation_length_2"],
+            E_variance,
+            3,
+            0.01,
         )
         self.E_randomfield.create_random_field(_type="random", _dist="LN")
 
         self.nu_randomfield = self.random_field_generator(
-            self.field_function_space, "squared_exp", Nu_mean, 0.3, 0.05, Nu_variance, 3, 0.01
+            self.field_function_space,
+            "squared_exp",
+            Nu_mean,
+            self.p["correlation_length_1"],
+            self.p["correlation_length_2"],
+            Nu_variance,
+            3,
+            0.01,
         )
         self.nu_randomfield.create_random_field(_type="random", _dist="LN")
 
