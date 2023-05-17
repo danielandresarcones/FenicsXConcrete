@@ -50,27 +50,27 @@ def test_full_boundary_reaction(dim: int, degree: int) -> None:
     fem_problem = LinearElasticity(cube, fem_parameters)
 
     # define reactionforce sensors
-    sensor = ReactionForceSensor(surface=cube.boundary_left())
+    sensor = ReactionForceSensor(surface=cube.boundary_left(), name="ReactionForceSensorLeft")
     fem_problem.add_sensor(sensor)
-    sensor = ReactionForceSensor(surface=cube.boundary_right())
+    sensor = ReactionForceSensor(surface=cube.boundary_right(), name="ReactionForceSensorRight")
     fem_problem.add_sensor(sensor)
-    sensor = ReactionForceSensor(surface=cube.boundary_top())
+    sensor = ReactionForceSensor(surface=cube.boundary_top(), name="ReactionForceSensorTop")
     fem_problem.add_sensor(sensor)
-    sensor = ReactionForceSensor(surface=cube.boundary_bottom())
+    sensor = ReactionForceSensor(surface=cube.boundary_bottom(), name="ReactionForceSensorBottom")
     fem_problem.add_sensor(sensor)
     if dim == 3:
-        sensor = ReactionForceSensor(surface=cube.boundary_front())
+        sensor = ReactionForceSensor(surface=cube.boundary_front(), name="ReactionForceSensorFront")
         fem_problem.add_sensor(sensor)
-        sensor = ReactionForceSensor(surface=cube.boundary_back())
+        sensor = ReactionForceSensor(surface=cube.boundary_back(), name="ReactionForceSensorBack")
         fem_problem.add_sensor(sensor)
 
     fem_problem.experiment.apply_displ_load(0.002 * ureg("m"))
     fem_problem.solve()
 
-    force_left = fem_problem.sensors.ReactionForceSensor.get_last_entry().magnitude[0]
-    force_right = fem_problem.sensors.ReactionForceSensor2.get_last_entry().magnitude[0]
-    force_top = fem_problem.sensors.ReactionForceSensor3.get_last_entry().magnitude[-1]
-    force_bottom = fem_problem.sensors.ReactionForceSensor4.get_last_entry().magnitude[-1]
+    force_left = fem_problem.sensors.ReactionForceSensorLeft.get_last_entry().magnitude[0]
+    force_right = fem_problem.sensors.ReactionForceSensorRight.get_last_entry().magnitude[0]
+    force_top = fem_problem.sensors.ReactionForceSensorTop.get_last_entry().magnitude[-1]
+    force_bottom = fem_problem.sensors.ReactionForceSensorBottom.get_last_entry().magnitude[-1]
 
     # checking opposing forces left-right and top-bottom
     assert force_left == pytest.approx(-1 * force_right)
@@ -79,22 +79,22 @@ def test_full_boundary_reaction(dim: int, degree: int) -> None:
     assert force_left == pytest.approx(force_bottom)
     # checking report metadata
     # TODO Figure out how to identify which boundary is applied
-    assert fem_problem.sensors.ReactionForceSensor.report_metadata()["surface"] == "boundary"
-    assert fem_problem.sensors.ReactionForceSensor2.report_metadata()["surface"] == "boundary"
-    assert fem_problem.sensors.ReactionForceSensor3.report_metadata()["surface"] == "boundary"
-    assert fem_problem.sensors.ReactionForceSensor4.report_metadata()["surface"] == "boundary"
+    assert fem_problem.sensors.ReactionForceSensorLeft.report_metadata()["surface"] == "boundary"
+    assert fem_problem.sensors.ReactionForceSensorRight.report_metadata()["surface"] == "boundary"
+    assert fem_problem.sensors.ReactionForceSensorTop.report_metadata()["surface"] == "boundary"
+    assert fem_problem.sensors.ReactionForceSensorBottom.report_metadata()["surface"] == "boundary"
 
     if dim == 3:
-        force_front = fem_problem.sensors.ReactionForceSensor5.get_last_entry().magnitude[1]
-        force_back = fem_problem.sensors.ReactionForceSensor6.get_last_entry().magnitude[1]
+        force_front = fem_problem.sensors.ReactionForceSensorFront.get_last_entry().magnitude[1]
+        force_back = fem_problem.sensors.ReactionForceSensorBack.get_last_entry().magnitude[1]
 
         # checking opposing forces front-back
         assert force_front == pytest.approx(-1 * force_back)
         # checking equal forces left-front
         assert force_left == pytest.approx(force_front)
         # checking report metadata
-        assert fem_problem.sensors.ReactionForceSensor5.report_metadata()["surface"] == "boundary"
-        assert fem_problem.sensors.ReactionForceSensor6.report_metadata()["surface"] == "boundary"
+        assert fem_problem.sensors.ReactionForceSensorFront.report_metadata()["surface"] == "boundary"
+        assert fem_problem.sensors.ReactionForceSensorBack.report_metadata()["surface"] == "boundary"
 
 
 @pytest.mark.parametrize("dim", [2, 3])
