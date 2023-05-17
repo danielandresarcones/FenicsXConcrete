@@ -5,8 +5,7 @@ from abc import ABC, abstractmethod
 
 import pint
 
-from fenicsxconcrete.helper import LogMixin
-from fenicsxconcrete.unit_registry import ureg
+from fenicsxconcrete.util import LogMixin, ureg
 
 
 # sensor template

@@ -7,7 +7,7 @@ import ufl
 from fenicsxconcrete.boundary_conditions.bcs import BoundaryConditions
 from fenicsxconcrete.finite_element_problem.base_material import MaterialProblem
 from fenicsxconcrete.sensor_definition.base_sensor import BaseSensor
-from fenicsxconcrete.unit_registry import ureg
+from fenicsxconcrete.util import ureg
 
 
 class Surface(TypedDict):
@@ -59,7 +59,7 @@ class ReactionForceSensor(BaseSensor):
         else:
             self.surface = getattr(problem.experiment, self.surface_dict["function"])(**self.surface_dict["args"])
 
-        v_reac = df.fem.Function(problem.V)
+        v_reac = df.fem.Function(problem.fields.displacement.function_space)
 
         reaction_force_vector = []
 
