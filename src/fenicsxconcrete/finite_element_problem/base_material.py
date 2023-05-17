@@ -4,8 +4,8 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path, PosixPath
 
-import jsonschema
 import dolfinx as df
+import jsonschema
 import pint
 import ufl
 
@@ -59,7 +59,6 @@ class QuadratureFields:
     strain: ufl.core.expr.Expr | df.fem.Function | None = None
     degree_of_hydration: ufl.core.expr.Expr | df.fem.Function | None = None
     damage: ufl.core.expr.Expr | df.fem.Function | None = None
-
 
 
 class MaterialProblem(ABC, LogMixin):
