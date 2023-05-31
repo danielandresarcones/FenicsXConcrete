@@ -5,8 +5,7 @@ from abc import ABC, abstractmethod
 
 import pint
 
-from fenicsxconcrete.helper import LogMixin
-from fenicsxconcrete.unit_registry import ureg
+from fenicsxconcrete.util import LogMixin, ureg
 
 
 # sensor template
@@ -158,5 +157,8 @@ class PointSensor(BaseSensor):
         """Generates dictionary with the metadata of this sensor"""
         metadata = super().report_metadata()
         metadata["sensor_file"] = os.path.splitext(os.path.basename(__file__))[0]
-        metadata["where"] = self.where
+        if isinstance(self.where, list):
+            metadata["where"] = self.where
+        else:
+            metadata["where"] = list(self.where)
         return metadata
