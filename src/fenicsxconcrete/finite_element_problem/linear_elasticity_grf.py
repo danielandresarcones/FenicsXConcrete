@@ -7,8 +7,10 @@ import ufl
 from petsc4py.PETSc import ScalarType
 
 from fenicsxconcrete.experimental_setup.base_experiment import Experiment
+from fenicsxconcrete.finite_element_problem.base_material import MaterialProblem, QuadratureFields, SolutionFields
 from fenicsxconcrete.finite_element_problem.linear_elasticity import LinearElasticity
 from fenicsxconcrete.gaussian_random_field import Randomfield
+from fenicsxconcrete.util import Parameters, ureg
 
 
 class LinearElasticityGRF(LinearElasticity):
@@ -44,6 +46,13 @@ class LinearElasticityGRF(LinearElasticity):
         self.u_trial = ufl.TrialFunction(self.V)
         self.v = ufl.TestFunction(self.V)
 
+        self.fields = SolutionFields(displacement=df.fem.Function(self.V, name="displacement"))
+        self.q_fields = QuadratureFields(
+            measure=ufl.dx,
+            plot_space_type=("DG", self.p["degree"] - 1),
+            stress=self.sigma(self.fields.displacement),
+            strain=self.epsilon(self.fields.displacement),
+        )
         # initialize L field, not sure if this is the best way...
         zero_field = df.fem.Constant(self.mesh, ScalarType(np.zeros(self.p["dim"])))
         self.L = ufl.dot(zero_field, self.v) * ufl.dx
@@ -65,6 +74,7 @@ class LinearElasticityGRF(LinearElasticity):
             self.a,
             self.L,
             bcs=bcs,
+            u=self.fields.displacement,
             petsc_options={"ksp_type": "preonly", "pc_type": "lu"},
         )
 
@@ -150,11 +160,11 @@ class LinearElasticityGRF(LinearElasticity):
         except:
             _t = t
 
-        self.displacement.name = "Displacement"
+        self.fields.displacement.name = "Displacement"
         self.E_randomfield.field.name = "E_field"
         self.nu_randomfield.field.name = "nu_field"
 
         with df.io.XDMFFile(self.mesh.comm, self.pv_output_file, "a") as f:
-            f.write_function(self.displacement, _t)
+            f.write_function(self.fields.displacement, _t)
             f.write_function(self.E_randomfield.field, _t)
             f.write_function(self.nu_randomfield.field, _t)
