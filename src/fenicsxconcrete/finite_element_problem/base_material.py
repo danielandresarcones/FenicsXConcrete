@@ -1,13 +1,17 @@
+import importlib
+import json
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path, PosixPath
 
 import dolfinx as df
+import jsonschema
 import pint
 import ufl
 
 from fenicsxconcrete.experimental_setup.base_experiment import Experiment
 from fenicsxconcrete.sensor_definition.base_sensor import BaseSensor
+from fenicsxconcrete.sensor_definition.sensor_schema import generate_sensor_schema
 from fenicsxconcrete.util import LogMixin, Parameters, ureg
 
 
@@ -144,6 +148,60 @@ class MaterialProblem(ABC, LogMixin):
     def delete_sensor(self) -> None:
         del self.sensors
         self.sensors = self.SensorDict()
+
+    def export_sensors_metadata(self, path: Path) -> None:
+        """Exports sensor metadata to JSON file according to the appropriate schema.
+
+        Args:
+            path : Path
+                Path where the metadata should be stored
+
+        """
+
+        sensors_metadata_dict = {"sensors": []}
+
+        for key, value in self.sensors.items():
+            sensors_metadata_dict["sensors"].append(value.report_metadata())
+            # sensors_metadata_dict[key]["name"] = key
+
+        with open(path, "w") as f:
+            json.dump(sensors_metadata_dict, f)
+
+    def import_sensors_from_metadata(self, path: Path) -> None:
+        """Import sensor metadata to JSON file and validate with the appropriate schema.
+
+        Args:
+            path : Path
+                Path where the metadata file is
+
+        """
+
+        # Load and validate
+        sensors_metadata_dict = {}
+        with open(path, "r") as f:
+            sensors_metadata_dict = json.load(f)
+        schema = generate_sensor_schema()
+        jsonschema.validate(instance=sensors_metadata_dict, schema=schema)
+
+        for sensor in sensors_metadata_dict["sensors"]:
+            # Dynamically import the module containing the class
+            module_name = "fenicsxconcrete.sensor_definition." + sensor["sensor_file"].lower()
+            module = importlib.import_module(module_name)
+
+            # Create a dictionary of keyword arguments from the remaining properties in the dictionary
+            kwargs = {
+                k: v for k, v in sensor.items() if k not in ["id", "type", "sensor_file", "units", "dimensionality"]
+            }
+
+            # Dynamically retrieve the class by its name
+            class_name = sensor["type"]
+            MySensorClass = getattr(module, class_name)
+
+            # Instantiate an object of the class with the given properties
+            sensor_i = MySensorClass(name=sensor["id"], **kwargs)
+            sensor_i.set_units(units=sensor["units"])
+
+            self.add_sensor(sensor_i)
 
     class SensorDict(dict):
         """
