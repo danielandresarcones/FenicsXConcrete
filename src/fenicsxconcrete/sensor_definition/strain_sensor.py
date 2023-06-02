@@ -19,7 +19,7 @@ class StrainSensor(PointSensor):
         where: location where the value is measured
     """
 
-    def measure(self, problem: MaterialProblem, t: float = 1.0) -> None:
+    def measure(self, problem: MaterialProblem) -> None:
         """
         The strain value at the defined point is added to the data list,
         as well as the time t to the time list
@@ -58,7 +58,7 @@ class StrainSensor(PointSensor):
         strain_data = strain_function.eval([self.where], cells)
 
         self.data.append(strain_data)
-        self.time.append(t)
+        self.time.append(problem.time)
 
     def report_metadata(self) -> dict:
         """Generates dictionary with the metadata of this sensor"""

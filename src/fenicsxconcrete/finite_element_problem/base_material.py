@@ -88,6 +88,7 @@ class MaterialProblem(ABC, LogMixin):
         # setting up default material parameters
         default_fem_parameters = Parameters()
         default_fem_parameters["g"] = 9.81 * ureg("m/s^2")
+        default_fem_parameters["dt"] = 1.0 * ureg("s")
 
         # adding experimental parameters to dictionary to combine to one
         default_fem_parameters.update(self.experiment.parameters)
@@ -100,7 +101,7 @@ class MaterialProblem(ABC, LogMixin):
 
         self.sensors = self.SensorDict()  # list to hold attached sensors
 
-        # settin gup path for paraview output
+        # setting up path for paraview output
         if not pv_path:
             pv_path = "."
         self.pv_output_file = Path(pv_path) / (pv_name + ".xdmf")
@@ -110,6 +111,13 @@ class MaterialProblem(ABC, LogMixin):
         self.q_fields = None
 
         self.residual = None  # initialize residual
+
+        # initialize time
+        self.time = 0.0
+
+        # set up xdmf file with mesh info
+        with df.io.XDMFFile(self.mesh.comm, self.pv_output_file, "w") as f:
+            f.write_mesh(self.mesh)
 
         # setup the material object to access the function
         self.setup()
@@ -127,8 +135,9 @@ class MaterialProblem(ABC, LogMixin):
 
     @abstractmethod
     def solve(self) -> None:
-        # define what to do, to solve this problem
         """Implemented in child if needed"""
+        self.update_time()
+        # define what to do, to solve this problem
 
     @abstractmethod
     def compute_residuals(self) -> None:
@@ -148,6 +157,10 @@ class MaterialProblem(ABC, LogMixin):
     def delete_sensor(self) -> None:
         del self.sensors
         self.sensors = self.SensorDict()
+
+    def update_time(self):
+        """update time"""
+        self.time += self.p["dt"]
 
     def export_sensors_metadata(self, path: Path) -> None:
         """Exports sensor metadata to JSON file according to the appropriate schema.

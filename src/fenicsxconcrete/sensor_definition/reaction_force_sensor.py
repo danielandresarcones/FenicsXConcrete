@@ -44,7 +44,7 @@ class ReactionForceSensor(BaseSensor):
         super().__init__(name=name)
         self.surface_dict = surface
 
-    def measure(self, problem: MaterialProblem, t: float = 1.0) -> None:
+    def measure(self, problem: MaterialProblem) -> None:
         """
         The reaction force vector of the defined surface is added to the data list,
         as well as the time t to the time list
@@ -101,7 +101,7 @@ class ReactionForceSensor(BaseSensor):
             reaction_force_vector.append(computed_force_z)
 
         self.data.append(reaction_force_vector)
-        self.time.append(t)
+        self.time.append(problem.time)
 
     def report_metadata(self) -> dict:
         """Generates dictionary with the metadata of this sensor"""
