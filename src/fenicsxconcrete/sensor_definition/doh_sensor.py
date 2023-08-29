@@ -13,8 +13,8 @@ from fenicsxconcrete.sensor_definition.base_sensor import PointSensor
 from fenicsxconcrete.util import project, ureg
 
 
-class StrainSensor(PointSensor):
-    """A sensor that measures strain at a specific point
+class DOHSensor(PointSensor):
+    """A sensor that measures degree of hydration at a specific point
 
     Attributes:
         data: list of measured values
@@ -26,7 +26,7 @@ class StrainSensor(PointSensor):
 
     def measure(self, problem: MaterialProblem) -> None:
         """
-        The strain value at the defined point is added to the data list,
+        The degree of hydration value at the defined point is added to the data list,
         as well as the time t to the time list
 
         Arguments:
@@ -35,14 +35,14 @@ class StrainSensor(PointSensor):
         """
 
         try:
-            strain = problem.q_fields.strain
-            assert strain is not None
+            degree_of_hydration = problem.q_fields.degree_of_hydration
+            assert degree_of_hydration is not None
         except AssertionError:
             raise Exception("Strain not defined in problem")
 
         strain_function = project(
-            strain,  # stress fct from problem
-            df.fem.TensorFunctionSpace(problem.experiment.mesh, problem.q_fields.plot_space_type),  # tensor space
+            degree_of_hydration,  # stress fct from problem
+            df.fem.FunctionSpace(problem.experiment.mesh, problem.q_fields.plot_space_type),  # tensor space
             problem.q_fields.measure,
         )
         # project stress onto visualization space

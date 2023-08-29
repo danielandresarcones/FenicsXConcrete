@@ -62,6 +62,10 @@ class QuadratureFields:
     strain: ufl.core.expr.Expr | df.fem.Function | None = None
     degree_of_hydration: ufl.core.expr.Expr | df.fem.Function | None = None
     damage: ufl.core.expr.Expr | df.fem.Function | None = None
+    compressive_strength: ufl.core.expr.Expr | df.fem.Function | None = None
+    tensile_strength: ufl.core.expr.Expr | df.fem.Function | None = None
+    youngs_modulus: ufl.core.expr.Expr | df.fem.Function | None = None
+    yield_values: ufl.core.expr.Expr | df.fem.Function | None = None
 
 
 class MaterialProblem(ABC, LogMixin):
@@ -161,7 +165,7 @@ class MaterialProblem(ABC, LogMixin):
         del self.sensors
         self.sensors = self.SensorDict()
 
-    def update_time(self):
+    def update_time(self) -> None:
         """update time"""
         self.time += self.p["dt"]
 
@@ -227,7 +231,7 @@ class MaterialProblem(ABC, LogMixin):
         When to sensors with the same name are defined, the next one gets a number added to the name
         """
 
-        def __getattr__(self, key):
+        def __getattr__(self, key: str):  # -> BaseSensor:
             return self[key]
 
         def __setitem__(self, initial_key: str, value: BaseSensor) -> None:
