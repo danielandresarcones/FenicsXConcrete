@@ -29,11 +29,10 @@ requirements:
 
   run:
     - fenics-dolfinx
-    - matplotlib
-    - meshio
     - pint
-    - python
-    - python-gmsh
+    - gmsh
+    - jsonschema
+    - scipy    
 
 test:
   imports:
