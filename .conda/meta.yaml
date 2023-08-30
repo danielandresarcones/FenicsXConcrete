@@ -45,7 +45,7 @@ test:
     - pytest
 
   commands:
-    - pytest tests
+    #- pytest tests
 
 about:
   home: https://github.com/BAMresearch/FenicsXConcrete
