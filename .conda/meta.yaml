@@ -30,7 +30,7 @@ requirements:
   run:
     - fenics-dolfinx
     - pint
-    - gmsh
+    - python-gmsh
     - jsonschema
     - scipy    
 
