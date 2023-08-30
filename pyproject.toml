@@ -24,7 +24,7 @@ license = {file = "LICENSE"}
 name = "fenicsxconcrete"
 readme = "REAMDE.md"
 requires-python = ">=3.10"
-version = "0.0.5a1"
+version = "0.0.8"
 
 [project.optional-dependencies]
 tests = ["pytest", "coverage", "toml"]
