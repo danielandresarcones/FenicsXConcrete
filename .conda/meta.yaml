@@ -43,6 +43,11 @@ test:
 
   requires:
     - pytest
+    - fenics-dolfinx
+    - pint
+    - python-gmsh
+    - jsonschema
+    - scipy
 
   commands:
     #- pytest tests
