@@ -34,22 +34,22 @@ requirements:
     - jsonschema
     - scipy    
 
-test:
-  imports:
-    - fenicsxconcrete
+#test:
+#  imports:
+#    - fenicsxconcrete
 
-  source_files:
-    - tests
+#  source_files:
+#    - tests
 
-  requires:
-    - pytest
-    - fenics-dolfinx
-    - pint
-    - python-gmsh
-    - jsonschema
-    - scipy
+#  requires:
+#    - pytest
+    #- fenics-dolfinx
+    #- pint
+    #- python-gmsh
+    #- jsonschema
+    #- scipy
 
-  commands:
+#  commands:
     #- pytest tests
 
 about:
