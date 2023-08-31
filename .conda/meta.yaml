@@ -34,24 +34,6 @@ requirements:
     - jsonschema
     - scipy    
 
-#test:
-#  imports:
-#    - fenicsxconcrete
-
-#  source_files:
-#    - tests
-
-#  requires:
-#    - pytest
-    #- fenics-dolfinx
-    #- pint
-    #- python-gmsh
-    #- jsonschema
-    #- scipy
-
-#  commands:
-    #- pytest tests
-
 about:
   home: https://github.com/BAMresearch/FenicsXConcrete
   license: MIT
