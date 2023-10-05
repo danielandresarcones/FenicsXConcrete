@@ -30,14 +30,33 @@ class Experiment(ABC, LogMixin):
         """
 
         # initialize parameter attributes
-        default_setup_parameters = Parameters()
-        # setting up default setup parameters
-        default_setup_parameters["degree"] = 2 * ureg("")  # polynomial degree
+        setup_parameters = Parameters()
 
+        # setting up default setup parameters defined in each child
+        default_p = self.default_parameters()
+        setup_parameters.update(default_p)
         # update with input parameters
-        default_setup_parameters.update(parameters)
+        setup_parameters.update(parameters)
+
+        # get logger info which parameters are set to default values
+        # plus check dimensionality of input parameters
+        keys_set_default = []
+        for key in dict(default_p):
+            if key not in parameters:
+                keys_set_default.append(key)
+            else:
+                # check if units are compatible
+                dim_given = parameters[key].dimensionality
+                dim_default = default_p[key].dimensionality
+                if dim_given != dim_default:
+                    raise ValueError(
+                        f"given units for {key} are not compatible with default units: {dim_given} != {dim_default}"
+                    )
+        self.logger.info(f"for the following parameters, the default values are used: {keys_set_default}")
+
         # as attribute
-        self.parameters = default_setup_parameters
+        self.parameters = setup_parameters
+
         # remove units for use in fem model
         self.p = self.parameters.to_magnitude()
 
@@ -58,6 +77,8 @@ class Experiment(ABC, LogMixin):
             a dictionary with required parameters and a set of working values as example
 
         """
+
+        pass
 
     @abstractmethod
     def create_displacement_boundary(self, V: df.fem.FunctionSpace) -> list[df.fem.bcs.DirichletBCMetaClass] | None:

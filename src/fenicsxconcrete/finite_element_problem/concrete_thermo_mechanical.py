@@ -32,22 +32,23 @@ class ConcreteThermoMechanical(MaterialProblem, LogMixin):
         pv_path: str | None = None,
     ) -> None:
 
-        # adding default material parameter, will be overridden by outside input
-        default_p = Parameters()
-        # default_p['dummy'] = 'example' * ureg('')  # example default parameter for this class
+        # # adding default material parameter, will be overridden by outside input
+        # default_p = Parameters()
+        # # default_p['dummy'] = 'example' * ureg('')  # example default parameter for this class
+        #
+        # # updating parameters, overriding defaults
+        # default_p.update(parameters)
 
-        # updating parameters, overriding defaults
-        default_p.update(parameters)
-
-        super().__init__(experiment, default_p, pv_name, pv_path)
+        super().__init__(experiment, parameters, pv_name, pv_path)
 
     @staticmethod
     def parameter_description() -> dict[str, str]:
         description = {
             "igc": "Ideal gas constant",
             "rho": "Density of concrete",
-            "themal_cond": "Thermal conductivity",
-            "vol_heat_cap": "TODO",
+            "g": "Gravitational acceleration",
+            "thermal_cond": "effective thermal conductivity",
+            "vol_heat_cap": "volumetric heat capacity",
             "Q_pot": "potential heat per weight of binder",
             "Q_inf": "potential heat per concrete volume",
             "B1": "numerical shape parameter for heat release function",
@@ -68,6 +69,7 @@ class ConcreteThermoMechanical(MaterialProblem, LogMixin):
             "ft_inf": "reference value for the tensile strength, default infinity, otherwise at alpha_tx",
             "a_ft": "exponential parameter to change the shape of the function ft(DOH)",
             "evolution_ft": "flag to turn off the evolution of the tensile strength",
+            "dt": "time step",
         }
 
         return description
@@ -85,6 +87,7 @@ class ConcreteThermoMechanical(MaterialProblem, LogMixin):
         default_parameters = {
             "igc": 8.3145 * ureg("J/K/mol"),
             "rho": 2350.0 * ureg("kg/m^3"),
+            "g": 9.81 * ureg("m/s^2"),
             "thermal_cond": 2.0 * ureg("W/(m*K)"),
             "vol_heat_cap": 2.4e6 * ureg("J/(m^3 * K)"),
             # "Q_pot": 500e3 * ureg("J/kg"), only needed for postprocessing
@@ -95,6 +98,7 @@ class ConcreteThermoMechanical(MaterialProblem, LogMixin):
             "alpha_max": 0.875 * ureg(""),
             "alpha_tx": 0.68 * ureg(""),
             "T_ref": ureg.Quantity(25.0, ureg.degC),
+            "degree": 2 * ureg(""),
             "q_degree": 2 * ureg(""),
             "E_28": 15 * ureg("MPa"),
             "nu": 0.2 * ureg(""),
@@ -106,16 +110,16 @@ class ConcreteThermoMechanical(MaterialProblem, LogMixin):
             "ft_inf": 467000 * ureg(""),
             "a_ft": 1.0 * ureg(""),
             "evolution_ft": "True" * ureg(""),
+            "dt": 1.0 * ureg("s"),
         }
-        default_parameters["E_act"] = 5653.0 * default_parameters["igc"] * ureg("J/mol")
+        default_parameters["E_act"] = 5653.0 * ureg("K") * default_parameters["igc"]
+
         return experiment, default_parameters
 
     def compute_residuals(self) -> None:
         pass
 
     def setup(self) -> None:
-        # TODO: the next line only makes a test pass. I don't like it either
-        _ = self.p["rho"]
         self.t = 0.0
 
         self.rule = QuadratureRule(cell_type=self.mesh.ufl_cell(), degree=self.p["q_degree"])
@@ -193,7 +197,6 @@ class ConcreteThermoMechanical(MaterialProblem, LogMixin):
 
         # set current DOH for computation of Young's modulus
         self.mechanics_problem.q_array_alpha[:] = self.temperature_problem.q_alpha.vector.array
-        # print('Solving: u') # TODO ouput only a certain log level INFO
 
         # mechanics paroblem is not required for temperature, could crash in frist time steps but then be useful
         try:
