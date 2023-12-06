@@ -3,11 +3,11 @@ channels:
   - conda-forge
 dependencies:
   # runtime
-  - fenics-dolfinx
+  - fenics-dolfinx=0.6.0
   - pint
   - matplotlib
-  - python-gmsh
-  - meshio
+  - python-gmsh=4.11.1
+  - meshio=5.3.4
   - jsonschema
   - scipy
   # tests
