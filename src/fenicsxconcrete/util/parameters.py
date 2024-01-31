@@ -11,8 +11,11 @@ class Parameters(UserDict):
     """
 
     def __setitem__(self, key: str, value: pint.Quantity):
-        assert isinstance(value, pint.Quantity)
-        self.data[key] = value.to_base_units()
+        assert isinstance(value, (pint.Quantity, bool))
+        try:
+            self.data[key] = value.to_base_units()
+        except AttributeError:
+            self.data[key] = value
 
     def __add__(self, other: Parameters | None) -> Parameters:
         if other is None:
@@ -24,6 +27,9 @@ class Parameters(UserDict):
     def to_magnitude(self) -> dict[str, int | str | float]:
         magnitude_dictionary = {}
         for key in self.keys():
-            magnitude_dictionary[key] = self[key].magnitude
+            try:
+                magnitude_dictionary[key] = self[key].magnitude
+            except AttributeError:
+                magnitude_dictionary[key] = self[key]
 
         return magnitude_dictionary
