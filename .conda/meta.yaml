@@ -29,24 +29,10 @@ requirements:
 
   run:
     - fenics-dolfinx
-    - matplotlib
-    - meshio
     - pint
-    - python
     - python-gmsh
-
-test:
-  imports:
-    - fenicsxconcrete
-
-  source_files:
-    - tests
-
-  requires:
-    - pytest
-
-  commands:
-    - pytest tests
+    - jsonschema
+    - scipy    
 
 about:
   home: https://github.com/BAMresearch/FenicsXConcrete

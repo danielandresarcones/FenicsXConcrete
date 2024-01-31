@@ -3,11 +3,13 @@ from collections.abc import Callable
 import dolfinx as df
 import numpy as np
 import pint
+import ufl
 from mpi4py import MPI
+from petsc4py.PETSc import ScalarType
 
 from fenicsxconcrete.boundary_conditions.bcs import BoundaryConditions
 from fenicsxconcrete.experimental_setup.base_experiment import Experiment
-from fenicsxconcrete.util import Parameters, ureg
+from fenicsxconcrete.util import LogMixin, Parameters, ureg
 
 
 class SimpleCube(Experiment):
@@ -31,15 +33,7 @@ class SimpleCube(Experiment):
                         see default_parameters for a first guess
         """
 
-        # initialize a set of default parameters
-        default_p = Parameters()
-        default_p["height"] = 1 * ureg("m")
-        default_p["width"] = 1 * ureg("m")
-        default_p["length"] = 1 * ureg("m")
-
-        default_p.update(parameters)
-
-        super().__init__(default_p)
+        super().__init__(parameters)
 
     @staticmethod
     def default_parameters() -> dict[str, pint.Quantity]:
@@ -52,11 +46,15 @@ class SimpleCube(Experiment):
 
         setup_parameters = {}
 
+        setup_parameters["height"] = 1 * ureg("m")
+        setup_parameters["width"] = 1 * ureg("m")
+        setup_parameters["length"] = 1 * ureg("m")
+        setup_parameters["T_0"] = ureg.Quantity(20.0, ureg.degC)
+        setup_parameters["T_bc"] = ureg.Quantity(20.0, ureg.degC)
         setup_parameters["dim"] = 3 * ureg("")
         setup_parameters["num_elements_length"] = 2 * ureg("")
         setup_parameters["num_elements_width"] = 2 * ureg("")
         setup_parameters["num_elements_height"] = 2 * ureg("")
-        setup_parameters["strain_state"] = "uniaxial" * ureg("")
         setup_parameters["strain_state"] = "uniaxial" * ureg("")
 
         return setup_parameters
@@ -97,6 +95,8 @@ class SimpleCube(Experiment):
 
         # initialize variable top_displacement
         self.top_displacement = df.fem.Constant(domain=self.mesh, c=0.0)  # applied via fkt: apply_displ_load(...)
+        self.use_body_force = False
+        self.temperature_bc = df.fem.Constant(domain=self.mesh, c=self.p["T_bc"])
 
     def create_displacement_boundary(self, V: df.fem.FunctionSpace) -> list[df.fem.bcs.DirichletBCMetaClass]:
         """Defines the displacement boundary conditions
@@ -177,3 +177,72 @@ class SimpleCube(Experiment):
         """
         top_displacement.ito_base_units()
         self.top_displacement.value = top_displacement.magnitude
+
+    def apply_temp_bc(self, T_bc: pint.Quantity | float) -> None:
+        """Updates the applied temperature boundary condition
+
+        Args:
+            T_bc1: Temperature of the top boundary in degree Celsius
+
+        """
+        T_bc.ito_base_units()
+        self.temperature_bc.value = T_bc.magnitude
+        self.p["T_bc"] = T_bc.magnitude
+
+    def apply_body_force(self) -> None:
+        self.use_body_force = True
+
+    def create_temperature_bcs(self, V: df.fem.FunctionSpace) -> list[df.fem.bcs.DirichletBCMetaClass]:
+        """defines empty temperature boundary conditions (to be done in child)
+
+        this function is abstract until there is a need for a material that does need a temperature boundary
+        once that is required, just make this a normal function that returns an empty list
+
+        Args:
+            V: function space
+
+        Returns:
+            a list with temperature boundary conditions
+
+        """
+
+        def full_boundary(x):
+            if self.p["dim"] == 2:
+                return (
+                    self.boundary_bottom()(x)
+                    | self.boundary_left()(x)
+                    | self.boundary_right()(x)
+                    | self.boundary_top()(x)
+                )
+            elif self.p["dim"] == 3:
+                return (
+                    self.boundary_back()(x)
+                    | self.boundary_bottom()(x)
+                    | self.boundary_front()(x)
+                    | self.boundary_left()(x)
+                    | self.boundary_right()(x)
+                    | self.boundary_top()(x)
+                )
+
+        bc_generator = BoundaryConditions(self.mesh, V)
+        bc_generator.add_dirichlet_bc(
+            self.temperature_bc,
+            boundary=full_boundary,
+            method="geometrical",
+            entity_dim=self.mesh.topology.dim - 1,
+        )
+        return bc_generator.bcs
+
+    def create_body_force(self, v: ufl.argument.Argument) -> ufl.form.Form | None:
+        # TODO: The sign of the body force is not clear.
+
+        if self.use_body_force:
+            force_vector = np.zeros(self.p["dim"])
+            force_vector[-1] = self.p["rho"] * self.p["g"]  # works for 2D and 3D
+
+            f = df.fem.Constant(self.mesh, force_vector)
+            L = ufl.dot(f, v) * ufl.dx
+
+            return L
+        else:
+            return None

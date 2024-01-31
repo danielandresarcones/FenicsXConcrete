@@ -8,7 +8,7 @@ from mpi4py import MPI
 from petsc4py.PETSc import ScalarType
 
 from fenicsxconcrete.boundary_conditions.bcs import BoundaryConditions
-from fenicsxconcrete.boundary_conditions.boundary import line_at, plane_at, point_at
+from fenicsxconcrete.boundary_conditions.boundary import line_at, point_at
 from fenicsxconcrete.experimental_setup.base_experiment import Experiment
 from fenicsxconcrete.util import Parameters, ureg
 
@@ -31,14 +31,7 @@ class SimpleBeam(Experiment):
 
         """
 
-        # initialize default parameters for the setup
-        default_p = Parameters()
-        default_p["degree"] = 2 * ureg("")  # polynomial degree
-
-        # updating parameters, overriding defaults
-        default_p.update(parameters)
-
-        super().__init__(default_p)
+        super().__init__(parameters)
 
     def setup(self):
         """defines the mesh for 2D or 3D
@@ -81,6 +74,7 @@ class SimpleBeam(Experiment):
         """
 
         setup_parameters = {}
+
         setup_parameters["load"] = 10000 * ureg("N/m^2")
         setup_parameters["length"] = 1 * ureg("m")
         setup_parameters["height"] = 0.3 * ureg("m")
@@ -191,7 +185,9 @@ class SimpleBeam(Experiment):
         facet_indices, facet_markers = [], []
         fdim = self.mesh.topology.dim - 1
 
-        locator = lambda x: np.isclose(x[fdim], self.p["height"])
+        def locator(x):
+            return np.isclose(x[fdim], self.p["height"])
+
         facets = df.mesh.locate_entities(self.mesh, fdim, locator)
         facet_indices.append(facets)
         facet_markers.append(np.full_like(facets, 1))

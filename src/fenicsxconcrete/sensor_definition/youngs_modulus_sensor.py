@@ -13,8 +13,8 @@ from fenicsxconcrete.sensor_definition.base_sensor import PointSensor
 from fenicsxconcrete.util import project, ureg
 
 
-class StressSensor(PointSensor):
-    """A sensor that measures stress at a specific point
+class YoungsModulusSensor(PointSensor):
+    """A sensor that measures degree of hydration at a specific point
 
     Attributes:
         data: list of measured values
@@ -26,25 +26,26 @@ class StressSensor(PointSensor):
 
     def measure(self, problem: MaterialProblem) -> None:
         """
-        The stress value at the defined point is added to the data list,
+        The degree of hydration value at the defined point is added to the data list,
         as well as the time t to the time list
 
         Arguments:
             problem : FEM problem object
             t : time of measurement for time dependent problems, default is 1
         """
-        # project stress onto visualization space
-        try:
-            stress = problem.q_fields.stress
-            assert stress is not None
-        except AssertionError:
-            raise Exception("Stress not defined in problem")
 
-        stress_function = project(
-            stress,  # stress fct from problem
-            df.fem.TensorFunctionSpace(problem.experiment.mesh, problem.q_fields.plot_space_type),  # tensor space
+        try:
+            youngs_modulus = problem.q_fields.youngs_modulus
+            assert youngs_modulus is not None
+        except AssertionError:
+            raise Exception("Strain not defined in problem")
+
+        strain_function = project(
+            youngs_modulus,  # stress fct from problem
+            df.fem.FunctionSpace(problem.experiment.mesh, problem.q_fields.plot_space_type),  # tensor space
             problem.q_fields.measure,
         )
+        # project stress onto visualization space
 
         # finding the cells corresponding to the point
         bb_tree = df.geometry.BoundingBoxTree(problem.experiment.mesh, problem.experiment.mesh.topology.dim)
@@ -59,16 +60,10 @@ class StressSensor(PointSensor):
             cells.append(colliding_cells.links(0)[0])
 
         # adding correct units to stress
-        stress_data = stress_function.eval([self.where], cells)
+        strain_data = strain_function.eval([self.where], cells)
 
-        self.data.append(stress_data)
+        self.data.append(strain_data)
         self.time.append(problem.time)
-
-    def report_metadata(self) -> dict:
-        """Generates dictionary with the metadata of this sensor"""
-        metadata = super().report_metadata()
-        metadata["sensor_file"] = os.path.splitext(os.path.basename(__file__))[0]
-        return metadata
 
     def report_metadata(self) -> dict:
         """Generates dictionary with the metadata of this sensor"""

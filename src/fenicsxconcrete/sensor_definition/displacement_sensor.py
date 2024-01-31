@@ -1,8 +1,13 @@
+from __future__ import annotations
+
 import os
+from typing import TYPE_CHECKING
 
 import dolfinx as df
 
-from fenicsxconcrete.finite_element_problem.base_material import MaterialProblem
+if TYPE_CHECKING:
+    from fenicsxconcrete.finite_element_problem.base_material import MaterialProblem
+
 from fenicsxconcrete.sensor_definition.base_sensor import PointSensor
 from fenicsxconcrete.util import ureg
 
@@ -18,7 +23,8 @@ class DisplacementSensor(PointSensor):
         where: location where the value is measured
     """
 
-    def measure(self, problem: MaterialProblem, t: float = 1.0) -> None:
+    # Type hints don't work here because they create a circular import :(
+    def measure(self, problem: MaterialProblem) -> None:
         """
         The displacement value at the defined point is added to the data list,
         as well as the time t to the time list
@@ -45,7 +51,13 @@ class DisplacementSensor(PointSensor):
         displacement_data = problem.fields.displacement.eval([self.where], cells)
 
         self.data.append(displacement_data)
-        self.time.append(t)
+        self.time.append(problem.time)
+
+    def report_metadata(self) -> dict:
+        """Generates dictionary with the metadata of this sensor"""
+        metadata = super().report_metadata()
+        metadata["sensor_file"] = os.path.splitext(os.path.basename(__file__))[0]
+        return metadata
 
     def report_metadata(self) -> dict:
         """Generates dictionary with the metadata of this sensor"""

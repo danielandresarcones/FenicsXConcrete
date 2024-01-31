@@ -63,6 +63,10 @@ class QuadratureFields:
     degree_of_hydration: ufl.core.expr.Expr | df.fem.Function | None = None
     damage: ufl.core.expr.Expr | df.fem.Function | None = None
     temperature: ufl.core.expr.Expr | df.fem.Function | None = None
+    compressive_strength: ufl.core.expr.Expr | df.fem.Function | None = None
+    tensile_strength: ufl.core.expr.Expr | df.fem.Function | None = None
+    youngs_modulus: ufl.core.expr.Expr | df.fem.Function | None = None
+    yield_values: ufl.core.expr.Expr | df.fem.Function | None = None
 
 
 class MaterialProblem(ABC, LogMixin):
@@ -89,22 +93,41 @@ class MaterialProblem(ABC, LogMixin):
         self.experiment = experiment
         self.mesh = self.experiment.mesh
 
-        # setting up default material parameters
-        default_fem_parameters = Parameters()
-        default_fem_parameters["g"] = 9.81 * ureg("m/s^2")
-
-        # adding experimental parameters to dictionary to combine to one
-        default_fem_parameters.update(self.experiment.parameters)
+        # initialize parameter attributes
+        setup_parameters = Parameters()
+        # setting up default setup parameters defined in each child
+        _, default_p = self.default_parameters()
+        setup_parameters.update(default_p)
+        # update with experiment parameters
+        setup_parameters.update(self.experiment.parameters)
         # update with input parameters
-        default_fem_parameters.update(parameters)
-        self.parameters = default_fem_parameters
+        setup_parameters.update(parameters)
+
+        # get logger info which input parameters are set to default values
+        # plus check dimensionality of input parameters
+        keys_set_default = []
+        for key in dict(default_p):
+            if key not in parameters:
+                keys_set_default.append(key)
+            else:
+                # check if units are compatible
+                dim_given = parameters[key].dimensionality
+                dim_default = default_p[key].dimensionality
+                if dim_given != dim_default:
+                    raise ValueError(
+                        f"given units for {key} are not compatible with default units: {dim_given} != {dim_default}"
+                    )
+        self.logger.info(f"for the following parameters, the default values are used: {keys_set_default}")
+
+        # set parameters as attribute
+        self.parameters = setup_parameters
         # remove units for use in fem model
         self.p = self.parameters.to_magnitude()
         self.experiment.p = self.p  # update experimental parameter list for use in e.g. boundary definition
 
         self.sensors = self.SensorDict()  # list to hold attached sensors
 
-        # settin gup path for paraview output
+        # setting up path for paraview output
         if not pv_path:
             pv_path = "."
         self.pv_output_file = Path(pv_path) / (pv_name + ".xdmf")
@@ -114,6 +137,9 @@ class MaterialProblem(ABC, LogMixin):
         self.q_fields = None
 
         self.residual = None  # initialize residual
+
+        # initialize time
+        self.time = 0.0
 
         # set up xdmf file with mesh info
         with df.io.XDMFFile(self.mesh.comm, self.pv_output_file, "w") as f:
@@ -128,6 +154,8 @@ class MaterialProblem(ABC, LogMixin):
         """returns a dictionary with required parameters and a set of working values as example"""
         # this must de defined in each setup class
 
+        pass
+
     @abstractmethod
     def setup(self) -> None:
         # initialization of this specific problem
@@ -135,8 +163,9 @@ class MaterialProblem(ABC, LogMixin):
 
     @abstractmethod
     def solve(self) -> None:
-        # define what to do, to solve this problem
         """Implemented in child if needed"""
+        self.update_time()
+        # define what to do, to solve this problem
 
     @abstractmethod
     def compute_residuals(self) -> None:
@@ -156,6 +185,10 @@ class MaterialProblem(ABC, LogMixin):
     def delete_sensor(self) -> None:
         del self.sensors
         self.sensors = self.SensorDict()
+
+    def update_time(self) -> None:
+        """update time"""
+        self.time += self.p["dt"]
 
     def export_sensors_metadata(self, path: Path) -> None:
         """Exports sensor metadata to JSON file according to the appropriate schema.
@@ -219,7 +252,7 @@ class MaterialProblem(ABC, LogMixin):
         When to sensors with the same name are defined, the next one gets a number added to the name
         """
 
-        def __getattr__(self, key):
+        def __getattr__(self, key: str):  # -> BaseSensor:
             return self[key]
 
         def __setitem__(self, initial_key: str, value: BaseSensor) -> None:

@@ -10,7 +10,7 @@ from petsc4py.PETSc import ScalarType
 from fenicsxconcrete.boundary_conditions.bcs import BoundaryConditions
 from fenicsxconcrete.boundary_conditions.boundary import plane_at
 from fenicsxconcrete.experimental_setup.base_experiment import Experiment
-from fenicsxconcrete.util import Parameters, ureg
+from fenicsxconcrete.util import Parameters, QuadratureRule, ureg
 
 
 class AmMultipleLayers(Experiment):
@@ -34,13 +34,7 @@ class AmMultipleLayers(Experiment):
 
         """
 
-        # initialize default parameters for the setup
-        default_p = Parameters()
-        # default_p['dummy'] = 'example' * ureg('')  # example default parameter for this class
-
-        # updating parameters, overriding defaults
-        default_p.update(parameters)
-        super().__init__(default_p)
+        super().__init__(parameters)
 
     @staticmethod
     def default_parameters() -> dict[str, pint.Quantity]:
@@ -52,6 +46,7 @@ class AmMultipleLayers(Experiment):
         """
 
         setup_parameters = {}
+        setup_parameters["degree"] = 2 * ureg("")  # polynomial degree
         # geometry
         setup_parameters["dim"] = 2 * ureg("")
         setup_parameters["num_layers"] = 10 * ureg("")  # number of layers in y
@@ -76,13 +71,12 @@ class AmMultipleLayers(Experiment):
         """
 
         self.logger.debug("setup mesh for %s", self.p["dim"])
-        print(self.p["dim"])
 
         if self.p["dim"] == 2:
             self.mesh = df.mesh.create_rectangle(
                 comm=MPI.COMM_WORLD,
-                points=[(0.0, 0.0), (self.p["layer_length"], self.p["num_layer"] * self.p["layer_height"])],
-                n=(self.p["num_elements_layer_length"], self.p["num_layer"] * self.p["num_elements_layer_height"]),
+                points=[(0.0, 0.0), (self.p["layer_length"], self.p["num_layers"] * self.p["layer_height"])],
+                n=(self.p["num_elements_layer_length"], self.p["num_layers"] * self.p["num_elements_layer_height"]),
                 cell_type=df.mesh.CellType.quadrilateral,
             )
         elif self.p["dim"] == 3:
@@ -90,12 +84,12 @@ class AmMultipleLayers(Experiment):
                 comm=MPI.COMM_WORLD,
                 points=[
                     (0.0, 0.0, 0.0),
-                    (self.p["layer_length"], self.p["layer_width"], self.p["num_layer"] * self.p["layer_height"]),
+                    (self.p["layer_length"], self.p["layer_width"], self.p["num_layers"] * self.p["layer_height"]),
                 ],
                 n=[
                     self.p["num_elements_layer_length"],
                     self.p["num_elements_layer_width"],
-                    self.p["num_layer"] * self.p["num_elements_layer_height"],
+                    self.p["num_layers"] * self.p["num_elements_layer_height"],
                 ],
                 cell_type=df.mesh.CellType.hexahedron,
             )
@@ -121,6 +115,7 @@ class AmMultipleLayers(Experiment):
                 np.array([0.0, 0.0], dtype=ScalarType),
                 boundary=self.boundary_bottom(),
                 method="geometrical",
+                entity_dim=self.mesh.topology.dim - 1,  # line
             )
 
         elif self.p["dim"] == 3:
@@ -129,15 +124,22 @@ class AmMultipleLayers(Experiment):
                 np.array([0.0, 0.0, 0.0], dtype=ScalarType),
                 boundary=self.boundary_bottom(),
                 method="geometrical",
+                entity_dim=self.mesh.topology.dim - 1,  # surface
             )
 
         return bc_generator.bcs
 
-    def create_body_force(self, v: ufl.argument.Argument) -> ufl.form.Form:
-        """defines body force
+    def create_body_force_am(
+        self, v: ufl.argument.Argument, q_fd: df.fem.Function, rule: QuadratureRule
+    ) -> ufl.form.Form:
+        """defines body force for am experiments
+
+        element activation via pseudo density and incremental loading via parameter ["load_time"] computed in class concrete_am
 
         Args:
             v: test function
+            q_fd: quadrature function given the loading increment where elements are active
+            rule: rule for the quadrature function
 
         Returns:
             form for body force
@@ -145,9 +147,9 @@ class AmMultipleLayers(Experiment):
         """
 
         force_vector = np.zeros(self.p["dim"])
-        force_vector[-1] = -self.p["rho"] * self.p["g"]
+        force_vector[-1] = -self.p["rho"] * self.p["g"]  # works for 2D and 3D
 
         f = df.fem.Constant(self.mesh, ScalarType(force_vector))
-        L = ufl.dot(f, v) * ufl.dx
+        L = q_fd * ufl.dot(f, v) * rule.dx
 
         return L

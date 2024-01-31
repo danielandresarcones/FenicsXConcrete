@@ -17,9 +17,12 @@ def generate_sensor_schema() -> dict:
                         {"$ref": "#/definitions/BaseSensor"},
                         {"$ref": "#/definitions/PointSensor"},
                         {"$ref": "#/definitions/DisplacementSensor"},
+                        {"$ref": "#/definitions/TemperatureSensor"},
                         {"$ref": "#/definitions/ReactionForceSensor"},
                         {"$ref": "#/definitions/StrainSensor"},
                         {"$ref": "#/definitions/StressSensor"},
+                        {"$ref": "#/definitions/YoungsModulusSensor"},
+                        {"$ref": "#/definitions/DOHSensor"},
                     ]
                 },
             }
@@ -82,6 +85,16 @@ def generate_sensor_schema() -> dict:
                     },
                 ]
             },
+            "TemperatureSensor": {
+                "allOf": [
+                    {"$ref": "#/definitions/pointSensorProperties"},
+                    {
+                        "type": "object",
+                        "properties": {"type": {"const": "TemperatureSensor", "description": "The type of sensor"}},
+                        "required": ["type"],
+                    },
+                ]
+            },
             "ReactionForceSensor": {
                 "allOf": [
                     {"$ref": "#/definitions/baseSensorProperties"},
@@ -114,6 +127,28 @@ def generate_sensor_schema() -> dict:
                     {
                         "type": "object",
                         "properties": {"type": {"const": "StressSensor", "description": "The type of sensor"}},
+                        "required": ["type"],
+                    },
+                ]
+            },
+            "YoungsModulusSensor": {
+                "allOf": [
+                    {"$ref": "#/definitions/pointSensorProperties"},
+                    {
+                        "type": "object",
+                        "properties": {
+                            "type": {"const": "YoungsModulusSensor", "description": "The type of sensor"},
+                        },
+                        "required": ["type"],
+                    },
+                ]
+            },
+            "DOHSensor": {
+                "allOf": [
+                    {"$ref": "#/definitions/pointSensorProperties"},
+                    {
+                        "type": "object",
+                        "properties": {"type": {"const": "DOHSensor", "description": "The type of sensor"}},
                         "required": ["type"],
                     },
                 ]

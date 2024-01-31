@@ -2,14 +2,16 @@ name: fenicsxconcrete
 channels:
   - conda-forge
 dependencies:
+  - python>=3.10
   # runtime
   - fenics-dolfinx=0.6.0
+  - mpi4py=3.1.4
+  - scipy
   - pint
   - matplotlib
   - python-gmsh=4.11.1
   - meshio=5.3.4
   - jsonschema
-  - scipy
   # tests
   - pytest
   - coverage
@@ -26,4 +28,5 @@ dependencies:
   - isort
   - pip
   - pip:
-      - -e .
+    - -e .
+

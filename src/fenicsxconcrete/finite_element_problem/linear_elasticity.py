@@ -21,14 +21,14 @@ class LinearElasticity(MaterialProblem):
     ) -> None:
         """defines default parameters, for the rest, see base class"""
 
-        # adding default material parameter, will be overridden by outside input
-        default_p = Parameters()
-        default_p["stress_state"] = "plane_strain" * ureg("")  # default stress state in 2D, optional "plane_stress"
+        # # adding default material parameter, will be overridden by outside input
+        # default_p = Parameters()
+        # default_p["stress_state"] = "plane_strain" * ureg("")  # default stress state in 2D, optional "plane_stress"
+        #
+        # # updating parameters, overriding defaults
+        # default_p.update(parameters)
 
-        # updating parameters, overriding defaults
-        default_p.update(parameters)
-
-        super().__init__(experiment, default_p, pv_name, pv_path)
+        super().__init__(experiment, parameters, pv_name, pv_path)
 
     def setup(self) -> None:
         # compute different set of elastic moduli
@@ -85,15 +85,43 @@ class LinearElasticity(MaterialProblem):
         )
 
     @staticmethod
+    def parameter_description() -> dict[str, str]:
+        """static method returning a description dictionary for required parameters
+
+        Returns:
+            description dictionary
+
+        """
+        description = {
+            "g": "gravity",
+            "dt": "time step",
+            "rho": "density of fresh concrete",
+            "E": "Young's Modulus",
+            "nu": "Poissons Ratio",
+            "stress_state": "for 2D plain stress or plane strain",
+            "degree": "Polynomial degree for the FEM model",
+            "dt": "time step",
+        }
+
+        return description
+
+    @staticmethod
     def default_parameters() -> tuple[Experiment, dict[str, pint.Quantity]]:
         """returns a dictionary with required parameters and a set of working values as example"""
         # default setup for this material
         experiment = CantileverBeam(CantileverBeam.default_parameters())
 
         model_parameters = {}
+        model_parameters["g"] = 9.81 * ureg("m/s^2")
+        model_parameters["dt"] = 1.0 * ureg("s")
+
         model_parameters["rho"] = 7750 * ureg("kg/m^3")
         model_parameters["E"] = 210e9 * ureg("N/m^2")
         model_parameters["nu"] = 0.28 * ureg("")
+
+        model_parameters["stress_state"] = "plane_strain" * ureg("")
+        model_parameters["degree"] = 2 * ureg("")  # polynomial degree
+        model_parameters["dt"] = 1.0 * ureg("s")
 
         return experiment, model_parameters
 
@@ -104,7 +132,9 @@ class LinearElasticity(MaterialProblem):
     def sigma(self, u: ufl.argument.Argument) -> ufl.core.expr.Expr:
         return self.lambda_ * ufl.nabla_div(u) * ufl.Identity(self.p["dim"]) + 2 * self.mu * self.epsilon(u)
 
-    def solve(self, t: float = 1.0) -> None:
+    def solve(self) -> None:
+        self.update_time()
+        self.logger.info(f"solving t={self.time}")
         self.weak_form_problem.solve()
 
         # TODO Defined as abstractmethod. Should it depend on sensor instead of material?
@@ -113,19 +143,15 @@ class LinearElasticity(MaterialProblem):
         # get sensor data
         for sensor_name in self.sensors:
             # go through all sensors and measure
-            self.sensors[sensor_name].measure(self, t)
+            self.sensors[sensor_name].measure(self)
 
     def compute_residuals(self) -> None:
         self.residual = ufl.action(self.a, self.fields.displacement) - self.L
 
     # paraview output
     # TODO move this to sensor definition!?!?!
-    def pv_plot(self, t: int = 0) -> None:
-        # TODO add possibility for multiple time steps???
+    def pv_plot(self) -> None:
         # Displacement Plot
 
-        # "Displacement.xdmf"
-        # pv_output_file
-        with df.io.XDMFFile(self.mesh.comm, self.pv_output_file, "w") as xdmf:
-            xdmf.write_mesh(self.mesh)
-            xdmf.write_function(self.fields.displacement)
+        with df.io.XDMFFile(self.mesh.comm, self.pv_output_file, "a") as f:
+            f.write_function(self.fields.displacement, self.time)

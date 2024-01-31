@@ -33,8 +33,9 @@ class BaseSensor(ABC, LogMixin):
         else:
             self.name = name
 
+    # Can't use type hint here, because it would create a circular import
     @abstractmethod
-    def measure(self):
+    def measure(self, problem) -> None:
         """Needs to be implemented in child, depends on the sensor
 
         This function is called, when the sensor adds the data to the data list.
@@ -42,7 +43,7 @@ class BaseSensor(ABC, LogMixin):
 
     @staticmethod
     @abstractmethod
-    def base_unit():
+    def base_unit() -> pint.Unit:
         """Defines the base unit of this sensor"""
 
     def report_metadata(self) -> dict:
@@ -145,12 +146,12 @@ class PointSensor(BaseSensor):
         self.where = where
 
     @abstractmethod
-    def measure(self):
+    def measure(self, problem) -> None:
         """Needs to be implemented in child, depending on the sensor"""
 
     @staticmethod
     @abstractmethod
-    def base_unit():
+    def base_unit() -> pint.Unit:
         """Defines the base unit of this sensor, must be specified by child"""
 
     def report_metadata(self) -> dict:
