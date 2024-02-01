@@ -111,12 +111,13 @@ class MaterialProblem(ABC, LogMixin):
                 keys_set_default.append(key)
             else:
                 # check if units are compatible
-                dim_given = parameters[key].dimensionality
-                dim_default = default_p[key].dimensionality
-                if dim_given != dim_default:
-                    raise ValueError(
-                        f"given units for {key} are not compatible with default units: {dim_given} != {dim_default}"
-                    )
+                if not isinstance(parameters[key], bool):
+                    dim_given = parameters[key].dimensionality
+                    dim_default = default_p[key].dimensionality
+                    if dim_given != dim_default:
+                        raise ValueError(
+                            f"given units for {key} are not compatible with default units: {dim_given} != {dim_default}"
+                        )
         self.logger.info(f"for the following parameters, the default values are used: {keys_set_default}")
 
         # set parameters as attribute
