@@ -59,6 +59,12 @@ class DisplacementSensor(PointSensor):
         metadata["sensor_file"] = os.path.splitext(os.path.basename(__file__))[0]
         return metadata
 
+    def report_metadata(self) -> dict:
+        """Generates dictionary with the metadata of this sensor"""
+        metadata = super().report_metadata()
+        metadata["sensor_file"] = os.path.splitext(os.path.basename(__file__))[0]
+        return metadata
+
     @staticmethod
     def base_unit() -> ureg:
         """Defines the base unit of this sensor

@@ -1,5 +1,6 @@
 import copy
 
+import pint
 import pytest
 
 from fenicsxconcrete.experimental_setup.am_multiple_layers import AmMultipleLayers
@@ -11,6 +12,39 @@ from fenicsxconcrete.experimental_setup.simple_cube import SimpleCube
 from fenicsxconcrete.experimental_setup.tensile_beam import TensileBeam
 from fenicsxconcrete.finite_element_problem.linear_elasticity import LinearElasticity
 from fenicsxconcrete.util import ureg
+
+# # makes no sense anymore since the default parameter are used in each experiment or material problem
+# # plus was not tested since twice the same names!!
+# @pytest.mark.parametrize(
+#     "setup",
+#     [
+#         CantileverBeam,
+#         TensileBeam,
+#         SimpleBeam,
+#         CompressionCylinder,
+#         AmMultipleLayers,
+#         SimpleCube,
+#     ],
+# )
+# def test_default_parameters(setup: Experiment) -> None:
+#     """This function creates experimental setups with the respective default dictionaries
+#
+#     This makes sure all relevant values are included"""
+#     default_material = LinearElasticity
+#
+#     setup_parameters = setup.default_parameters()
+#
+#     # initialize with default parameters
+#     experiment = setup(setup_parameters)
+#
+#     # test that each parameter is truly required
+#     for key in setup_parameters:
+#         with pytest.raises(KeyError):
+#             less_parameters = copy.deepcopy(setup_parameters)
+#             less_parameters.pop(key)
+#             experiment = setup(less_parameters)
+#             fem_problem = default_material(experiment, default_material.default_parameters()[1])
+#             fem_problem.solve()
 
 
 @pytest.mark.parametrize(
@@ -25,24 +59,16 @@ from fenicsxconcrete.util import ureg
     ],
 )
 def test_default_parameters(setup: Experiment) -> None:
-    """This function creates experimental setups with the respective default dictionaries
-
-    This makes sure all relevant values are included"""
-    default_material = LinearElasticity
+    """This function tests if the default_parameters are complete"""
+    # default_material = LinearElasticity
 
     setup_parameters = setup.default_parameters()
 
-    # initialize with default parameters
-    experiment = setup(setup_parameters)
-
-    # test that each parameter is truly required
-    for key in setup_parameters:
-        with pytest.raises(KeyError):
-            less_parameters = copy.deepcopy(setup_parameters)
-            less_parameters.pop(key)
-            experiment = setup(less_parameters)
-            fem_problem = default_material(experiment, default_material.default_parameters()[1])
-            fem_problem.solve()
+    try:
+        experiment = setup(setup_parameters)
+    except KeyError:
+        print("default parameter dictionary is wrong")
+        raise ValueError
 
 
 # to imporve coverage, I want to test the error messages
@@ -62,4 +88,23 @@ def test_default_parameters(setup: Experiment) -> None:
 
     with pytest.raises(ValueError):
         setup_parameters["dim"] = 4 * ureg("")  # there is no 4D setup
+        test_setup = setup(setup_parameters)
+
+
+@pytest.mark.parametrize(
+    "setup",
+    [
+        CantileverBeam,
+        TensileBeam,
+        SimpleBeam,
+        CompressionCylinder,
+        AmMultipleLayers,
+        SimpleCube,
+    ],
+)
+def test_dimensionality_check(setup: Experiment) -> None:
+    setup_parameters = setup.default_parameters()
+
+    with pytest.raises(ValueError):
+        setup_parameters["dim"] = 3 * ureg("s")  # dimension should be dimensionless
         test_setup = setup(setup_parameters)

@@ -62,6 +62,7 @@ class QuadratureFields:
     strain: ufl.core.expr.Expr | df.fem.Function | None = None
     degree_of_hydration: ufl.core.expr.Expr | df.fem.Function | None = None
     damage: ufl.core.expr.Expr | df.fem.Function | None = None
+    temperature: ufl.core.expr.Expr | df.fem.Function | None = None
     compressive_strength: ufl.core.expr.Expr | df.fem.Function | None = None
     tensile_strength: ufl.core.expr.Expr | df.fem.Function | None = None
     youngs_modulus: ufl.core.expr.Expr | df.fem.Function | None = None
@@ -92,16 +93,35 @@ class MaterialProblem(ABC, LogMixin):
         self.experiment = experiment
         self.mesh = self.experiment.mesh
 
-        # setting up default material parameters
-        default_fem_parameters = Parameters()
-        default_fem_parameters["g"] = 9.81 * ureg("m/s^2")
-        default_fem_parameters["dt"] = 1.0 * ureg("s")
-
-        # adding experimental parameters to dictionary to combine to one
-        default_fem_parameters.update(self.experiment.parameters)
+        # initialize parameter attributes
+        setup_parameters = Parameters()
+        # setting up default setup parameters defined in each child
+        _, default_p = self.default_parameters()
+        setup_parameters.update(default_p)
+        # update with experiment parameters
+        setup_parameters.update(self.experiment.parameters)
         # update with input parameters
-        default_fem_parameters.update(parameters)
-        self.parameters = default_fem_parameters
+        setup_parameters.update(parameters)
+
+        # get logger info which input parameters are set to default values
+        # plus check dimensionality of input parameters
+        keys_set_default = []
+        for key in dict(default_p):
+            if key not in parameters:
+                keys_set_default.append(key)
+            else:
+                # check if units are compatible
+                if not isinstance(parameters[key], bool):
+                    dim_given = parameters[key].dimensionality
+                    dim_default = default_p[key].dimensionality
+                    if dim_given != dim_default:
+                        raise ValueError(
+                            f"given units for {key} are not compatible with default units: {dim_given} != {dim_default}"
+                        )
+        self.logger.info(f"for the following parameters, the default values are used: {keys_set_default}")
+
+        # set parameters as attribute
+        self.parameters = setup_parameters
         # remove units for use in fem model
         self.p = self.parameters.to_magnitude()
         self.experiment.p = self.p  # update experimental parameter list for use in e.g. boundary definition
@@ -134,6 +154,8 @@ class MaterialProblem(ABC, LogMixin):
     def default_parameters() -> tuple[Experiment, dict[str, pint.Quantity]]:
         """returns a dictionary with required parameters and a set of working values as example"""
         # this must de defined in each setup class
+
+        pass
 
     @abstractmethod
     def setup(self) -> None:
